@@ -2538,6 +2538,14 @@ input:focus,select:focus,textarea:focus{outline:2px solid #3b82f6;outline-offset
             <sc-if value="{{ aeIsModelo }}" hint-placeholder-val="{{ false }}">
               <div style="display:flex;flex-direction:column;gap:22px;">
                 <div><h2 style="margin:0;font-size:20px;font-weight:700;">Modelo</h2><p style="margin:4px 0 0;font-size:14px;color:var(--color-text-secondary);">Provedor de IA, criatividade e chaves de API.</p></div>
+                <div style="display:flex;flex-direction:column;gap:10px;border:1px solid var(--color-border-tertiary);border-radius:12px;padding:16px 18px;background:var(--color-background-primary);">
+                  <div style="font-weight:700;font-size:14px;display:flex;align-items:center;gap:7px;"><i class="ti ti-shield-lock" style="font-size:16px;color:#16a34a;"></i>Modo de resposta</div>
+                  <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                    <button onClick="{{ aeViaWebhook }}" style="{{ aeViaWebhookStyle }}"><i class="ti ti-server-2" style="font-size:16px;"></i>Servidor (webhook) — seguro</button>
+                    <button onClick="{{ aeViaNavegador }}" style="{{ aeViaNavegadorStyle }}"><i class="ti ti-browser" style="font-size:16px;"></i>Navegador (Gemini direto)</button>
+                  </div>
+                  <div style="font-size:12px;color:var(--color-text-secondary);line-height:1.45;">{{ aeViaHint }}</div>
+                </div>
                 <div style="display:flex;align-items:flex-start;gap:13px;background:linear-gradient(120deg,#eef2ff,#faf5ff);border:1px solid #ddd6fe;border-radius:12px;padding:16px 18px;">
                   <i class="ti ti-sparkles" style="font-size:22px;color:#6d28d9;flex-shrink:0;"></i>
                   <div><div style="font-weight:700;font-size:14px;color:#4c1d95;">Modelo Recomendado: {{ aeRecModel }}</div><div style="font-size:12.5px;color:#6d28d9;margin-top:2px;">{{ aeRecMotivo }}</div></div>
@@ -3177,7 +3185,7 @@ class Component extends DCLogic {
     // remove conversas de demonstração salvas anteriormente
     const savedConversas = (saved && saved.conversas || []).filter(c => DEMO_IDS.indexOf(c.id) < 0 && c.nome !== 'Bruno Antony' && c.nome !== 'Vitor Gus' && c.nome !== 'Salão Maria Flor');
     this.setState({
-      agentes: (saved && saved.agentes) || defAgentes,
+      agentes: ((saved && saved.agentes) || defAgentes).map(a => { a = Object.assign({}, a); a.gemini = Object.assign({ apiKey: '', model: 'gemini-2.0-flash' }, a.gemini || {}); if (/gemini-1\.5/.test(a.gemini.model || '')) a.gemini.model = 'gemini-2.0-flash'; if (/gemini-1\.5/.test(a.forcarModelo || '')) a.forcarModelo = ''; return a; }),
       conversas: savedConversas,
       canais: (saved && saved.canais) || defCanais,
       wppStatus: savedWpp ? 'conectado' : 'desconectado',
@@ -3439,6 +3447,7 @@ class Component extends DCLogic {
       papel: 'atendimento', icon: 'ti-robot', cor: '#3b82f6', ativo: true,
       desc: '', tom: 'Cordial e objetivo', gatilho: 'Mensagem recebida',
       avatarUrl: '', promptSistema: prompt.trim(), boasVindas: a.boasVindas || 'Olá {user-name}! 👋 Como posso ajudar você hoje?',
+      respostaVia: a.respostaVia || 'navegador',
       temperatura: (a.temperatura != null ? a.temperatura : 0.5),
       forcarModelo: a.forcarModelo || '',
       regras: a.regras || '', voz: a.voz || { ativa: false, provedor: 'ElevenLabs', voiceId: '' },
@@ -3446,7 +3455,8 @@ class Component extends DCLogic {
       conhecimento: a.conhecimento || '',
     }, a, {
       promptSistema: prompt.trim(),
-      gemini: Object.assign({ apiKey: '', model: 'gemini-2.0-flash' }, a.gemini || {}),
+      gemini: (function (g) { g = Object.assign({ apiKey: '', model: 'gemini-2.0-flash' }, g || {}); if (/gemini-1\.5/.test(g.model || '')) g.model = 'gemini-2.0-flash'; return g; })(a.gemini),
+      forcarModelo: (/gemini-1\.5/.test(a.forcarModelo || '') ? '' : (a.forcarModelo || '')),
       canais: (a.canais || []).slice(),
     });
   }
@@ -3471,12 +3481,15 @@ class Component extends DCLogic {
     } catch (e) {
       const m = String((e && e.message) || e);
       let dica = '';
-      if (/API key not valid|API_KEY_INVALID|invalid/i.test(m)) dica = ' → A chave Gemini está inválida. Gere uma nova em aistudio.google.com/apikey.';
+      if (/quota|free_tier|rate.?limit|limit:\s*0|exceeded/i.test(m)) dica = ' → Sua conta não tem cota para este modelo (o gemini-2.5-pro exige plano pago). Troque o Modelo para gemini-2.0-flash (gratuito) e salve.';
+      else if (/API key not valid|API_KEY_INVALID|invalid/i.test(m)) dica = ' → A chave Gemini está inválida. Gere uma nova em aistudio.google.com/apikey.';
       else if (/referer|referrer|blocked|forbidden|403/i.test(m)) dica = ' → A chave tem restrição de site (referrer). Crie uma chave SEM restrição de referrer.';
-      else if (/not found|404|model/i.test(m)) dica = ' → Modelo incorreto. Use gemini-2.0-flash ou gemini-2.5-pro.';      else if (/Failed to fetch|NetworkError|CORS|load failed/i.test(m)) dica = ' → Bloqueio de rede/CORS.';
+      else if (/not found|404|model/i.test(m)) dica = ' → Modelo incorreto. Use gemini-2.0-flash.';
+      else if (/Failed to fetch|NetworkError|CORS|load failed/i.test(m)) dica = ' → Bloqueio de rede/CORS.';
       this.setState({ agentTestando: false, agentTestResult: 'Falhou: ' + m + dica, agentTestOk: false });
     }
   }
+  setRespostaVia(v) { this.setState(s => ({ form: Object.assign({}, s.form, { respostaVia: v }) })); }
   restaurarAgente() {
     // reseta os campos para um padrão funcional, PRESERVANDO chave Gemini e canais vinculados
     this.setState(s => ({ form: Object.assign({}, s.form, {
@@ -3497,7 +3510,7 @@ class Component extends DCLogic {
   insertPromptVar(v) { this.setState(s => ({ form: Object.assign({}, s.form, { promptSistema: (s.form.promptSistema || '') + v }) })); }
   recommendedModel() {
     const f = this.state.form || {}; const p = (f.promptSistema || '').length; const tools = Object.values(f.ferramentas || {}).filter(Boolean).length;
-    if (p > 4000 || tools >= 3) return { nome: 'gemini-2.5-pro', motivo: 'Prompt extenso ou muitas ferramentas — modelo avançado recomendado.' };
+    if (p > 4000 || tools >= 3) return { nome: 'gemini-2.5-flash', motivo: 'Prompt extenso ou muitas ferramentas — modelo avançado (gratuito) recomendado.' };
     return { nome: 'gemini-2.0-flash', motivo: 'Prompt objetivo — modelo rápido e econômico é suficiente.' };
   }
   toggleAgenteCanal(id) { this.setState(s => { const cur = s.form.canais || []; const has = cur.indexOf(id) >= 0; return { form: Object.assign({}, s.form, { canais: has ? cur.filter(x => x !== id) : [...cur, id] }) }; }); }
@@ -3839,6 +3852,12 @@ class Component extends DCLogic {
     if (!auto && S.aiThinking) return;
     // no modo automático: só responde se a IA está no controle (não humano, não resolvido)
     if (auto && (conv.humano === true || conv.resolvida)) return;
+    // se o agente responde pelo servidor (webhook), o navegador não responde (evita chave no cliente e resposta dupla)
+    if (auto) {
+      const canalId0 = conv.canalId || (conv.source === 'wpp' ? (this.wppConnectedChannel() || {}).id : null);
+      const ag0 = (canalId0 && (S.agentes || []).find(a => a.ativo && (a.canais || []).includes(canalId0))) || (S.agentes || []).find(a => a.ativo && a.papel === 'atendimento') || (S.agentes || []).find(a => a.ativo);
+      if (ag0 && ag0.respostaVia === 'webhook') return;
+    }
     // não responde duas vezes à mesma mensagem
     const lastMsg = conv.msgs[conv.msgs.length - 1];
     if (auto) {
@@ -4756,6 +4775,16 @@ class Component extends DCLogic {
           checkStyle: { marginLeft: 'auto', width: '24px', height: '24px', borderRadius: '7px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', border: linked ? 'none' : '2px solid var(--color-border-tertiary)', background: linked ? '#1a2b42' : 'transparent', color: '#fff' } };
       });
       vm.aeGeminiModelOptions = ['gemini-2.0-flash', 'gemini-2.5-flash', 'gemini-2.5-pro'];
+      const via = f.respostaVia || 'navegador';
+      const segOn = { display: 'inline-flex', alignItems: 'center', gap: '7px', border: 'none', cursor: 'pointer', borderRadius: '9px', padding: '10px 15px', fontWeight: 600, fontSize: '13.5px', background: '#1a2b42', color: '#fff' };
+      const segOff = { display: 'inline-flex', alignItems: 'center', gap: '7px', border: '1px solid var(--color-border-tertiary)', cursor: 'pointer', borderRadius: '9px', padding: '10px 15px', fontWeight: 600, fontSize: '13.5px', background: 'var(--color-background-secondary)', color: 'var(--color-text-secondary)' };
+      vm.aeViaWebhook = () => this.setRespostaVia('webhook');
+      vm.aeViaNavegador = () => this.setRespostaVia('navegador');
+      vm.aeViaWebhookStyle = via === 'webhook' ? segOn : segOff;
+      vm.aeViaNavegadorStyle = via === 'navegador' ? segOn : segOff;
+      vm.aeViaHint = via === 'webhook'
+        ? 'Recomendado. As respostas são geradas pelo servidor (webhook), onde a chave Gemini fica protegida. O navegador não usa a chave — pode deixá-la em branco aqui. Requer o webhook publicado e registrado no canal.'
+        : 'A resposta é gerada pelo navegador com a chave abaixo (bom para testes). A chave fica salva só no seu navegador, não no arquivo — mas evite este modo em produção pública.';
       vm.aeTestar = () => this.testarAgente();
       vm.aeRestaurar = () => this.restaurarAgente();
       vm.aeTestando = !!S.agentTestando;
