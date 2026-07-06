@@ -2276,6 +2276,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid #3b82f6;outline-offset
                   <div style="font-size:13px;color:var(--color-text-secondary);line-height:1.5;max-width:240px;">Cadastre clientes em Cadastros › Clientes.</div>
                 </div>
               </sc-if>
+              <!-- agendamentos: módulo próprio (fora daqui) -->
             </div>
           </div>
           <!-- thread -->
@@ -2369,6 +2370,48 @@ input:focus,select:focus,textarea:focus{outline:2px solid #3b82f6;outline-offset
               </div>
             </sc-if>
           </div>
+        </div>
+      </sc-if>
+
+      <!-- ===== AGENDAMENTOS ===== -->
+      <sc-if value="{{ isAgendamentos }}" hint-placeholder-val="{{ false }}">
+        <div>
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+            <div style="flex:1;position:relative;display:flex;align-items:center;max-width:420px;">
+              <i class="ti ti-search" style="position:absolute;left:13px;font-size:17px;color:var(--color-text-secondary);"></i>
+              <input value="{{ agSearch }}" onInput="{{ onAgSearch }}" placeholder="Buscar por nome, telefone ou solicitação…" style="width:100%;padding:11px 14px 11px 40px;border:1px solid var(--color-border-tertiary);border-radius:10px;background:var(--color-background-primary);font-size:14px;">
+            </div>
+            <button onClick="{{ onNovoAgendamento }}" style="display:inline-flex;align-items:center;gap:7px;background:#16a34a;color:#fff;border:none;border-radius:10px;padding:11px 18px;font-weight:600;font-size:14px;cursor:pointer;flex-shrink:0;"><i class="ti ti-calendar-plus" style="font-size:18px;"></i>Novo agendamento</button>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;">
+            <sc-for list="{{ agendamentosList }}" as="a" hint-placeholder-count="3">
+              <div style="background:var(--color-background-primary);border:1px solid var(--color-border-tertiary);border-radius:var(--radius);padding:18px;display:flex;flex-direction:column;gap:12px;">
+                <div style="display:flex;align-items:center;gap:12px;">
+                  <div style="width:46px;height:46px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;background:var(--color-background-tertiary);color:var(--color-text-secondary);">{{ a.initials }}</div>
+                  <div style="flex:1;min-width:0;">
+                    <div style="font-weight:700;font-size:15.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ a.nome }}</div>
+                    <div style="font-size:13px;color:var(--color-text-secondary);display:flex;align-items:center;gap:5px;margin-top:2px;"><i class="ti ti-phone" style="font-size:14px;"></i>{{ a.telefone }}</div>
+                  </div>
+                  <span style="{{ a.origemStyle }}"><i class="ti {{ a.origemIcon }}" style="font-size:13px;"></i>{{ a.origem }}</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:7px;font-size:13.5px;font-weight:700;color:#16a34a;"><i class="ti ti-clock" style="font-size:16px;"></i>{{ a.quando }}</div>
+                <div style="font-size:13px;color:var(--color-text-secondary);line-height:1.55;background:var(--color-background-secondary);border-radius:9px;padding:11px 13px;">{{ a.resumo }}</div>
+                <div style="display:flex;gap:9px;">
+                  <sc-if value="{{ a.temConv }}" hint-placeholder-val="{{ false }}">
+                    <button onClick="{{ a.onOpen }}" style="flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;background:var(--color-background-secondary);border:1px solid var(--color-border-tertiary);border-radius:9px;padding:9px;font-size:13px;font-weight:600;color:var(--color-text-primary);cursor:pointer;"><i class="ti ti-message" style="font-size:15px;"></i>Ver conversa</button>
+                  </sc-if>
+                  <button onClick="{{ a.onRemove }}" title="Remover agendamento" style="display:inline-flex;align-items:center;justify-content:center;background:var(--color-background-secondary);border:1px solid var(--color-border-tertiary);border-radius:9px;padding:9px 13px;color:#ef4444;cursor:pointer;"><i class="ti ti-trash" style="font-size:16px;"></i></button>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          <sc-if value="{{ agendamentosEmpty }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:70px 24px;text-align:center;background:var(--color-background-primary);border:1px solid var(--color-border-tertiary);border-radius:var(--radius);">
+              <div style="width:72px;height:72px;border-radius:50%;background:var(--color-background-secondary);display:flex;align-items:center;justify-content:center;color:var(--color-text-secondary);"><i class="ti ti-calendar-event" style="font-size:34px;"></i></div>
+              <div style="font-weight:700;font-size:17px;">Nenhum agendamento</div>
+              <div style="font-size:14px;color:var(--color-text-secondary);line-height:1.5;max-width:340px;">Quando a IA marcar um horário numa conversa, o agendamento aparece aqui com nome do cliente, telefone e o resumo das solicitações.</div>
+            </div>
+          </sc-if>
         </div>
       </sc-if>
 
@@ -2926,6 +2969,30 @@ input:focus,select:focus,textarea:focus{outline:2px solid #3b82f6;outline-offset
             </div>
           </sc-if>
 
+          <!-- NOVO AGENDAMENTO -->
+          <sc-if value="{{ m_agendamento }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:16px;">
+              <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:14px;">
+                <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:var(--color-text-secondary);">Nome do cliente <span style="color:var(--color-text-danger);">*</span>
+                  <input name="nome" value="{{ form.nome }}" onInput="{{ onFormChange }}" placeholder="Nome do cliente" style="padding:11px 13px;border:1px solid var(--color-border-tertiary);border-radius:9px;background:var(--color-background-primary);">
+                </label>
+                <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:var(--color-text-secondary);">Telefone
+                  <input name="telefone" value="{{ form.telefone }}" onInput="{{ onFormChange }}" placeholder="+55..." style="padding:11px 13px;border:1px solid var(--color-border-tertiary);border-radius:9px;background:var(--color-background-primary);">
+                </label>
+              </div>
+              <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:var(--color-text-secondary);">Data / horário
+                <input name="quando" value="{{ form.quando }}" onInput="{{ onFormChange }}" placeholder="ex: 12/07 às 14h" style="padding:11px 13px;border:1px solid var(--color-border-tertiary);border-radius:9px;background:var(--color-background-primary);">
+              </label>
+              <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:var(--color-text-secondary);">Resumo / solicitações
+                <textarea name="resumo" value="{{ form.resumo }}" onInput="{{ onFormChange }}" rows="3" placeholder="Resumo da conversa e o que o cliente solicitou" style="padding:11px 13px;border:1px solid var(--color-border-tertiary);border-radius:9px;background:var(--color-background-primary);resize:vertical;"></textarea>
+              </label>
+              <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:2px;">
+                <button onClick="{{ closeModal }}" style="background:var(--color-background-tertiary);color:var(--color-text-primary);border:none;border-radius:10px;padding:11px 20px;font-weight:600;font-size:14px;cursor:pointer;">Cancelar</button>
+                <button onClick="{{ saveModal }}" style="background:#16a34a;color:#fff;border:none;border-radius:10px;padding:11px 22px;font-weight:600;font-size:14px;cursor:pointer;">Salvar agendamento</button>
+              </div>
+            </div>
+          </sc-if>
+
           <!-- NOVA CONVERSA -->
           <sc-if value="{{ m_novaconv }}" hint-placeholder-val="{{ false }}">
             <div style="display:flex;flex-direction:column;gap:16px;">
@@ -3187,12 +3254,54 @@ class Component extends DCLogic {
     this.setState({
       agentes: ((saved && saved.agentes) || defAgentes).map(a => { a = Object.assign({}, a); a.gemini = Object.assign({ apiKey: '', model: 'gemini-flash-latest' }, a.gemini || {}); if (/gemini-(1\.5|2\.0)/.test(a.gemini.model || '')) a.gemini.model = 'gemini-flash-latest'; if (/gemini-1\.5/.test(a.forcarModelo || '')) a.forcarModelo = ''; return a; }),
       conversas: savedConversas,
+      agendamentos: (saved && saved.agendamentos) || [],
       canais: (saved && saved.canais) || defCanais,
       wppStatus: savedWpp ? 'conectado' : 'desconectado',
       activeConv: null,
     }, () => { this.persistCA(); if (this.wppConnectedChannel()) this.syncWppConversas(true); });
   }
-  persistCA = () => { try { localStorage.setItem('versatil_ca', JSON.stringify({ conversas: this.state.conversas, agentes: this.state.agentes, canais: this.state.canais })); } catch (e) {} };
+  persistCA = () => { try { localStorage.setItem('versatil_ca', JSON.stringify({ conversas: this.state.conversas, agentes: this.state.agentes, canais: this.state.canais, agendamentos: this.state.agendamentos })); } catch (e) {} };
+  // ---- agendamentos ----
+  addAgendamento(ag) {
+    const item = Object.assign({ id: 'ag' + Date.now() + Math.floor(Math.random() * 999), criadoEm: Date.now(), origem: 'IA' }, ag);
+    this.setState(s => ({ agendamentos: [item, ...(s.agendamentos || [])] }), () => { this.persistCA(); this.toast('success', 'Agendamento registrado: ' + (item.nome || 'cliente')); });
+    return item;
+  }
+  removeAgendamento(id) { this.setState(s => ({ agendamentos: (s.agendamentos || []).filter(a => a.id !== id) }), () => { this.persistCA(); this.toast('info', 'Agendamento removido'); }); }
+  openNovoAgendamento(conv) {
+    const c = conv || (this.state.conversas || []).find(x => x.id === this.state.activeConv);
+    this.setState({ convMenuOpen: false, modal: 'novo_agendamento', form: { nome: (c && c.nome) || '', telefone: (c && (c.telefone || this.convPhone(c))) || '', quando: '', resumo: '' } });
+  }
+  saveNovoAgendamento() {
+    const f = this.state.form; const nome = (f.nome || '').trim();
+    if (!nome) return this.toast('error', 'Informe o nome do cliente');
+    this.addAgendamento({ nome: nome, telefone: (f.telefone || '').trim(), quando: (f.quando || '').trim(), resumo: (f.resumo || '').trim(), origem: 'Manual' });
+    this.setState({ modal: null, form: {}, convTab: 'agendamentos' });
+  }
+  // extrai agendamento da conversa via IA (best-effort, não bloqueia)
+  async iaCheckAgendamento(conv, agent) {
+    try {
+      if (!conv || !agent) return;
+      const gk = agent.gemini && agent.gemini.apiKey && agent.gemini.apiKey.trim();
+      if (!gk) return;
+      // evita reprocessar o mesmo ponto da conversa
+      this._agCheck = this._agCheck || {};
+      if (this._agCheck[conv.id] === conv.msgs.length) return;
+      this._agCheck[conv.id] = conv.msgs.length;
+      const history = conv.msgs.map(m => (m.from === 'cliente' ? 'Cliente' : 'Empresa') + ': ' + (m.text || ('[' + (m.type || 'mídia') + ']'))).join('\n');
+      const sys = 'Você analisa conversas de atendimento e detecta se um AGENDAMENTO/COMPROMISSO foi marcado (horário para serviço, visita, reunião, corte, etc.). Responda SOMENTE com JSON válido, sem texto extra. Se houve agendamento confirmado, retorne {"agendou":true,"quando":"data/horário em texto","resumo":"resumo curto das solicitações do cliente"}. Se NÃO houve, retorne {"agendou":false}.';
+      const userMsg = 'Conversa:\n' + history + '\n\nHouve um agendamento confirmado?';
+      const raw = await this.geminiComplete(agent, sys, userMsg);
+      const jtxt = (raw || '').replace(/```json|```/g, '').trim();
+      let parsed = null; try { parsed = JSON.parse(jtxt); } catch (e) { const m = jtxt.match(/\{[\s\S]*\}/); if (m) { try { parsed = JSON.parse(m[0]); } catch (e2) {} } }
+      if (parsed && parsed.agendou) {
+        // não duplica agendamento para a mesma conversa
+        const jaTem = (this.state.agendamentos || []).some(a => a.convId === conv.id);
+        if (jaTem) return;
+        this.addAgendamento({ convId: conv.id, nome: conv.nome, telefone: conv.telefone || this.convPhone(conv), quando: parsed.quando || '', resumo: parsed.resumo || '', origem: 'IA' });
+      }
+    } catch (e) { /* silencioso */ }
+  }
   toggleGroup(key) { this.setState(s => { const cur = s.openGroups[key] !== false; return { openGroups: Object.assign({}, s.openGroups, { [key]: !cur }) }; }); }
   setConvTab(t) { this.setState({ convTab: t, activeConv: t === 'contatos' ? null : this.state.activeConv }); }
   setConvFonte(v) { this.setState({ convFonte: v }); }
@@ -3482,6 +3591,7 @@ class Component extends DCLogic {
       const m = String((e && e.message) || e);
       let dica = '';
       if (/quota|free_tier|rate.?limit|limit:\s*0|exceeded/i.test(m)) dica = ' → Sua conta não tem cota para este modelo (o gemini-2.5-pro exige plano pago). Troque o Modelo para gemini-flash-latest ou gemini-2.5-flash (gratuito) e salve.';
+      else if (/high demand|overloaded|temporar|try again|503/i.test(m)) dica = ' → O modelo está sobrecarregado no momento (temporário). Tente novamente em instantes.';
       else if (/API key not valid|API_KEY_INVALID|invalid/i.test(m)) dica = ' → A chave Gemini está inválida. Gere uma nova em aistudio.google.com/apikey.';
       else if (/referer|referrer|blocked|forbidden|403/i.test(m)) dica = ' → A chave tem restrição de site (referrer). Crie uma chave SEM restrição de referrer.';
       else if (/not found|404|model/i.test(m)) dica = ' → Modelo incorreto. Use gemini-flash-latest ou gemini-2.5-flash.';
@@ -3839,11 +3949,25 @@ class Component extends DCLogic {
       contents: [{ role: 'user', parts: [{ text: userMsg }] }],
       generationConfig: { temperature: (agent.temperatura != null ? agent.temperatura : 0.5) },
     };
-    const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-    const data = await r.json();
-    if (!r.ok) throw new Error((data.error && data.error.message) || ('Gemini ' + r.status));
-    const parts = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts || [];
-    return parts.map(p => p.text || '').join('').trim();
+    // retry automático em picos de demanda (503) / rate transitório (429)
+    let lastErr = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      let data = null; try { data = await r.json(); } catch (e) { data = {}; }
+      if (r.ok) {
+        const parts = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts || [];
+        return parts.map(p => p.text || '').join('').trim();
+      }
+      const msg = (data.error && data.error.message) || ('Gemini ' + r.status);
+      lastErr = new Error(msg);
+      // só vale a pena repetir se for sobrecarga/temporário
+      if (r.status === 503 || r.status === 429 || /high demand|overloaded|temporar|try again/i.test(msg)) {
+        await new Promise(res => setTimeout(res, 1200 * (attempt + 1)));
+        continue;
+      }
+      throw lastErr; // erro definitivo (chave, modelo, cota) — não repete
+    }
+    throw lastErr;
   }
   async aiRespond(convArg, auto) {
     const S = this.state;
@@ -3916,6 +4040,9 @@ class Component extends DCLogic {
         this.toast('error', 'Falha ao enviar resposta do agente: ' + this.uaFriendly(e));
       }
     }
+    // após responder, verifica se a conversa gerou um agendamento (best-effort)
+    const convAtual = (this.state.conversas || []).find(c => c.id === conv.id) || conv;
+    this.iaCheckAgendamento(convAtual, agent);
   }
 
   // ---------- Supabase REST ----------
@@ -4060,6 +4187,7 @@ class Component extends DCLogic {
     if (m === 'nova_conversa') return this.saveNovaConversa();
     if (m === 'renomear_conv') return this.saveRenomearConv();
     if (m === 'add_cliente_conv') return this.saveAddClienteConv();
+    if (m === 'novo_agendamento') return this.saveNovoAgendamento();
     if (m === 'config_canal') return this.saveCanal();
     if (m === 'nova_venda') {
       if (!f.cliente || !f.valor) return this.toast('error', 'Informe cliente e valor');
@@ -4139,6 +4267,7 @@ class Component extends DCLogic {
       ] },
       { key: 'atendimento', label: 'ATENDIMENTO', items: [
         { key: 'atendimento', label: 'Atendimento', icon: 'ti-messages', badge: unreadTotal || null, badgeColor: '#3b82f6' },
+        { key: 'agendamentos', label: 'Agendamentos', icon: 'ti-calendar-event', badge: (S.agendamentos || []).length || null, badgeColor: '#16a34a' },
         { key: 'agentes', label: 'Agentes IA', icon: 'ti-robot', badge: agentesAtivos || null, badgeColor: '#10b981' },
       ] },
       { key: 'comercial', label: 'COMERCIAL', items: [
@@ -4188,6 +4317,7 @@ class Component extends DCLogic {
       clientes: ['Clientes', 'Sua carteira de clientes'],
       fornecedores: ['Fornecedores', 'Parceiros e condições comerciais'],
       atendimento: ['Atendimento', 'Central de mensagens e conversas'],
+      agendamentos: ['Agendamentos', 'Horários marcados pelos agentes de IA'],
       agentes: ['Agentes IA', 'Automação inteligente do atendimento'],
     };
     const addLabels = { vendas: 'Nova Venda', compras: 'Nova Ordem', despesas: 'Nova Despesa', estoque: 'Novo Produto', clientes: 'Novo Cliente', fornecedores: 'Novo Fornecedor' };
@@ -4214,12 +4344,12 @@ class Component extends DCLogic {
       showAdd: ['vendas', 'compras', 'despesas', 'estoque', 'clientes', 'fornecedores'].includes(tab) && !S.viewCompra, addLabel: addLabels[tab] || '', openAdd: () => this.openAdd(),
       stop: (e) => e.stopPropagation(),
       // modal
-      showModal: !!S.modal, modalTitle: { nova_venda: 'Nova Venda', nova_compra: 'Nova Ordem de Compra', nova_despesa: 'Nova Despesa', novo_produto: 'Novo Produto', novo_cliente: 'Novo Cliente', novo_fornecedor: 'Novo Fornecedor', config_agente: S.form && S.form.id ? 'Configurar Agente' : 'Novo Agente', config_canal: S.form && S.form._new ? 'Adicionar Canal' : 'Configurar Canal', conectar_wpp: 'Conectar WhatsApp', nova_conversa: 'Nova Conversa', renomear_conv: 'Renomear Contato', add_cliente_conv: 'Adicionar aos Clientes', excluir_conv: 'Excluir Conversa' }[S.modal] || '',
+      showModal: !!S.modal, modalTitle: { nova_venda: 'Nova Venda', nova_compra: 'Nova Ordem de Compra', nova_despesa: 'Nova Despesa', novo_produto: 'Novo Produto', novo_cliente: 'Novo Cliente', novo_fornecedor: 'Novo Fornecedor', config_agente: S.form && S.form.id ? 'Configurar Agente' : 'Novo Agente', config_canal: S.form && S.form._new ? 'Adicionar Canal' : 'Configurar Canal', conectar_wpp: 'Conectar WhatsApp', nova_conversa: 'Nova Conversa', renomear_conv: 'Renomear Contato', add_cliente_conv: 'Adicionar aos Clientes', excluir_conv: 'Excluir Conversa', novo_agendamento: 'Novo Agendamento' }[S.modal] || '',
       m_venda: S.modal === 'nova_venda', m_compra: S.modal === 'nova_compra', m_despesa: S.modal === 'nova_despesa', m_produto: S.modal === 'novo_produto', m_cliente: S.modal === 'novo_cliente', m_fornecedor: S.modal === 'novo_fornecedor',
       m_agente: S.modal === 'config_agente', m_canal: S.modal === 'config_canal', m_wpp: S.modal === 'conectar_wpp', m_novaconv: S.modal === 'nova_conversa',
-      m_renomear: S.modal === 'renomear_conv', m_addcli: S.modal === 'add_cliente_conv', m_excluirconv: S.modal === 'excluir_conv',
+      m_renomear: S.modal === 'renomear_conv', m_addcli: S.modal === 'add_cliente_conv', m_excluirconv: S.modal === 'excluir_conv', m_agendamento: S.modal === 'novo_agendamento',
       onDoExcluirConv: () => this.doExcluirConv(),
-      showModalFooter: !!S.modal && S.modal !== 'conectar_wpp' && S.modal !== 'config_canal' && S.modal !== 'nova_conversa' && S.modal !== 'renomear_conv' && S.modal !== 'add_cliente_conv' && S.modal !== 'excluir_conv',
+      showModalFooter: !!S.modal && S.modal !== 'conectar_wpp' && S.modal !== 'config_canal' && S.modal !== 'nova_conversa' && S.modal !== 'renomear_conv' && S.modal !== 'add_cliente_conv' && S.modal !== 'excluir_conv' && S.modal !== 'novo_agendamento',
       agenteIsEdit: !!(S.form && S.form.id),
       onDeleteAgente: () => this.deleteAgente(S.form.id),
       onCanalUaChange: this.onCanalUaChange, onGeminiChange: this.onGeminiChange,
@@ -4475,6 +4605,7 @@ class Component extends DCLogic {
       vm.countAtendimento = all.filter(c => statusOf(c) === 'atendimento').length;
       vm.countResolvidas = all.filter(c => statusOf(c) === 'resolvidas').length;
       vm.countContatos = (S.data.clientes || []).length;
+      vm.countAgendamentos = (S.agendamentos || []).length;
       // abas (estilo pílula verde)
       const tabDef = [
         { k: 'pendente', label: 'Pendente', icon: 'ti-alert-circle', count: null },
@@ -4555,7 +4686,7 @@ class Component extends DCLogic {
         avatarStyle: { width: '42px', height: '42px', borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 700, background: 'var(--color-background-tertiary)', color: 'var(--color-text-secondary)' },
       }));
       vm.convSearch = S.search.atendimento || '';
-      vm.convSearchPlaceholder = vm.isContatos ? 'Buscar contato por nome…' : 'Buscar por nome, número…';
+      vm.convSearchPlaceholder = vm.isContatos ? 'Buscar contato por nome…' : (vm.isAgendamentos ? 'Buscar agendamento…' : 'Buscar por nome, número…');
       vm.onConvSearch = (e) => this.setSearch(e.target.value);
       const conv = (S.conversas || []).find(c => c.id === S.activeConv);
       vm.hasConv = !!conv; vm.noConv = !conv;
@@ -4659,6 +4790,26 @@ class Component extends DCLogic {
       vm.sendChat = () => this.sendChat(); vm.aiRespond = () => this.aiRespond();
       vm.aiBtnDisabled = S.aiThinking || !conv;
       vm.aiBtnStyle = { background: S.aiThinking ? 'var(--color-background-tertiary)' : 'linear-gradient(135deg,#6d28d9,#3b82f6)', color: S.aiThinking ? 'var(--color-text-secondary)' : '#fff', border: 'none', borderRadius: '11px', width: '44px', height: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: S.aiThinking ? 'default' : 'pointer', flexShrink: 0 };
+    }
+
+    // ===== AGENDAMENTOS (módulo próprio) =====
+    vm.isAgendamentos = tab === 'agendamentos';
+    if (vm.isAgendamentos) {
+      const cs = (S.search.agendamentos || '').toLowerCase();
+      vm.agSearch = S.search.agendamentos || '';
+      vm.onAgSearch = (e) => this.setSearch(e.target.value);
+      vm.onNovoAgendamento = () => this.openNovoAgendamento();
+      const agFilt = (S.agendamentos || []).filter(a => !cs || (a.nome || '').toLowerCase().includes(cs) || (a.telefone || '').includes(cs) || (a.resumo || '').toLowerCase().includes(cs));
+      vm.agendamentosEmpty = agFilt.length === 0;
+      vm.agendamentosList = agFilt.map(a => ({
+        nome: a.nome || 'Cliente', telefone: a.telefone || 'sem telefone', quando: a.quando || 'A combinar', resumo: a.resumo || '—',
+        origem: a.origem || 'IA', temConv: !!a.convId,
+        origemStyle: { display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '11.5px', fontWeight: 700, padding: '3px 9px', borderRadius: '7px', background: a.origem === 'Manual' ? 'var(--color-background-tertiary)' : 'rgba(109,40,217,.12)', color: a.origem === 'Manual' ? 'var(--color-text-secondary)' : '#6d28d9' },
+        origemIcon: a.origem === 'Manual' ? 'ti-user' : 'ti-robot',
+        initials: this.initials(a.nome || 'C'),
+        onOpen: () => { if (a.convId) { this.setTab('atendimento'); this.setState({ convTab: 'pendente' }); this.openConv(a.convId); } },
+        onRemove: () => this.removeAgendamento(a.id),
+      }));
     }
 
     // ===== AGENTES IA =====
