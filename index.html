@@ -3454,7 +3454,7 @@ class Component extends DCLogic {
   resolveConv(id, ev) {
     if (ev) ev.stopPropagation();
     const at = Date.now();
-    this.setState(s => ({ convMenuOpen: false, conversas: s.conversas.map(c => c.id === id ? Object.assign({}, c, { resolvida: true, resolvidaAt: at }) : c) }), () => {
+    this.setState(s => ({ convMenuOpen: false, conversas: s.conversas.map(c => c.id === id ? Object.assign({}, c, { resolvida: true, resolvidaAt: at, _localCtrl: true }) : c) }), () => {
       this.persistCA(); this.toast('success', 'Conversa resolvida — retorna à IA em 30 min');
       this.scheduleRetornoIA(id, this.RETORNO_IA_MS);
     });
@@ -3476,7 +3476,7 @@ class Component extends DCLogic {
   devolverIA(id, ev, auto) {
     if (ev) ev.stopPropagation();
     this._retTimers = this._retTimers || {}; clearTimeout(this._retTimers[id]);
-    this.setState(s => ({ convMenuOpen: false, convTab: 'pendente', conversas: s.conversas.map(c => c.id === id ? Object.assign({}, c, { humano: false, iaAtiva: true, resolvida: false, resolvidaAt: null }) : c) }), () => {
+    this.setState(s => ({ convMenuOpen: false, convTab: 'pendente', conversas: s.conversas.map(c => c.id === id ? Object.assign({}, c, { humano: false, iaAtiva: true, resolvida: false, resolvidaAt: null, _localCtrl: false }) : c) }), () => {
       this.persistCA();
       const c = this.state.conversas.find(x => x.id === id);
       // reativa o agente no canal (chatbot uazapi volta a responder)
@@ -3484,8 +3484,8 @@ class Component extends DCLogic {
       this.toast(auto ? 'info' : 'success', auto ? ('Conversa de ' + ((c && c.nome) || '') + ' devolvida à IA') : 'Conversa devolvida para a IA — o agente do canal assume o atendimento');
     });
   }
-  reopenConv(id, ev) { if (ev) ev.stopPropagation(); this._retTimers = this._retTimers || {}; clearTimeout(this._retTimers[id]); this.setState(s => ({ convMenuOpen: false, conversas: s.conversas.map(c => c.id === id ? Object.assign({}, c, { resolvida: false, resolvidaAt: null }) : c) }), () => { this.persistCA(); this.toast('info', 'Conversa reaberta'); }); }
-  assumirConv(id, ev) { if (ev) ev.stopPropagation(); this.setState(s => ({ conversas: s.conversas.map(c => c.id === id ? Object.assign({}, c, { humano: true, iaAtiva: false }) : c), activeConv: id }), () => { this.persistCA(); this.toast('success', 'Você assumiu o atendimento'); }); }
+  reopenConv(id, ev) { if (ev) ev.stopPropagation(); this._retTimers = this._retTimers || {}; clearTimeout(this._retTimers[id]); this.setState(s => ({ convMenuOpen: false, conversas: s.conversas.map(c => c.id === id ? Object.assign({}, c, { resolvida: false, resolvidaAt: null, _localCtrl: true }) : c) }), () => { this.persistCA(); this.toast('info', 'Conversa reaberta'); }); }
+  assumirConv(id, ev) { if (ev) ev.stopPropagation(); this.setState(s => ({ conversas: s.conversas.map(c => c.id === id ? Object.assign({}, c, { humano: true, iaAtiva: false, _localCtrl: true }) : c), activeConv: id }), () => { this.persistCA(); this.toast('success', 'Você assumiu o atendimento'); }); }
   // --- ações sobre a conversa selecionada ---
   convPhone(conv) { return String((conv && (conv.telefone || conv.chatid)) || '').replace(/@.*/, '').replace(/[^0-9+]/g, ''); }
   openRenomearConv(id) { const c = (this.state.conversas || []).find(x => x.id === id); this.setState({ convMenuOpen: false, modal: 'renomear_conv', form: { _convId: id, nome: (c && c.nome) || '' } }); }
@@ -3603,7 +3603,15 @@ class Component extends DCLogic {
         const locais = (s.conversas || []).filter(c => c.source !== 'wpp');
         // preserva mensagens já carregadas de chats wpp
         const prevById = {}; (s.conversas || []).forEach(c => { if (c.source === 'wpp') prevById[c.id] = c; });
-        const merged = mapped.map(m => { const prev = prevById[m.id]; return prev && prev._msgsLoaded ? Object.assign({}, m, { msgs: prev.msgs, _msgsLoaded: true }) : m; });
+        const merged = mapped.map(m => {
+          const prev = prevById[m.id];
+          if (!prev) return m;
+          const keep = {};
+          if (prev._msgsLoaded) { keep.msgs = prev.msgs; keep._msgsLoaded = true; }
+          // uma vez que o operador tocou na conversa, a decisão local manda até devolver/finalizar
+          if (prev._localCtrl) { keep.humano = prev.humano; keep.iaAtiva = prev.iaAtiva; keep.resolvida = prev.resolvida; keep._localCtrl = true; keep.setor = prev.setor; }
+          return Object.assign({}, m, keep);
+        });
         return { conversas: [...merged, ...locais], wppSyncing: false };
       }, () => { this.persistCA(); if (!silent) this.toast('success', mapped.length + ' conversa(s) sincronizada(s)'); this.autoResponderPendentes(); });
     } catch (e) {
@@ -3718,7 +3726,7 @@ class Component extends DCLogic {
     if (replyTo) baseMsg.replyTo = replyTo;
     if (media) { baseMsg.type = media.type; baseMsg.url = media.url; baseMsg.fileName = media.fileName; baseMsg.fileSize = media.fileSize; }
     // envio otimista: mostra a mensagem imediatamente com status "enviando"
-    this.setState(s => ({ conversas: s.conversas.map(c => c.id === convId ? Object.assign({}, c, { humano: true, iaAtiva: false, msgs: [...c.msgs, baseMsg] }) : c), chatDraft: media ? s.chatDraft : '', chatReplyTo: null, emojiOpen: false, attachMenuOpen: false }), () => { this.persistCA(); this.scrollThreadBottom(true); });
+    this.setState(s => ({ conversas: s.conversas.map(c => c.id === convId ? Object.assign({}, c, { humano: true, iaAtiva: false, _localCtrl: true, msgs: [...c.msgs, baseMsg] }) : c), chatDraft: media ? s.chatDraft : '', chatReplyTo: null, emojiOpen: false, attachMenuOpen: false }), () => { this.persistCA(); this.scrollThreadBottom(true); });
     // se for conversa do WhatsApp e houver canal conectado, envia de verdade
     if (conv && conv.source === 'wpp' && conv.chatid) {
       const ch = this.wppConnectedChannel();
