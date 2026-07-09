@@ -3309,9 +3309,13 @@ class Component extends DCLogic {
   }
 
   // ---------- atendimento / agentes IA ----------
-  seedAtendimento() {
+  async seedAtendimento() {
     let saved = null;
     try { saved = JSON.parse(localStorage.getItem('versatil_ca') || 'null'); } catch (e) {}
+    // tenta carregar a configuração compartilhada do Supabase (mesma em qualquer navegador/dispositivo)
+    let shared = null;
+    try { const rows = await this.api('GET', 'app_config', { query: "id=eq.shared&select=data" }); shared = rows && rows[0] && rows[0].data; } catch (e) { console.warn('[app_config] não foi possível carregar do Supabase:', e.message || e); }
+    if (shared) saved = shared;
     const defAgentes = [
       { id: 'ag1', nome: 'Atendente Virtual', icon: 'ti-headset', cor: '#3b82f6', ativo: true, papel: 'atendimento', desc: 'Responde dúvidas de clientes automaticamente com base no histórico da conversa.', tom: 'Cordial e objetivo', modelo: 'Claude Haiku', gatilho: 'Mensagem recebida', gemini: { apiKey: '', model: 'gemini-flash-latest' }, canais: [] },
       { id: 'ag2', nome: 'Qualificador de Leads', icon: 'ti-filter-check', cor: '#8b5cf6', ativo: false, papel: 'vendas', desc: 'Identifica intenção de compra e prioriza as conversas mais quentes.', tom: 'Consultivo', modelo: 'Claude Haiku', gatilho: 'Nova conversa', gemini: { apiKey: '', model: 'gemini-flash-latest' }, canais: [] },
@@ -3339,7 +3343,21 @@ class Component extends DCLogic {
       activeConv: null,
     }, () => { this.persistCA(); if (this.wppConnectedChannel()) this.syncWppConversas(true); });
   }
-  persistCA = () => { try { localStorage.setItem('versatil_ca', JSON.stringify({ conversas: this.state.conversas, agentes: this.state.agentes, canais: this.state.canais, agendamentos: this.state.agendamentos, gcalUrl: this.state.gcalUrl, gcalSecret: this.state.gcalSecret })); } catch (e) {} };
+  persistCA = () => {
+    const snapshot = { conversas: this.state.conversas, agentes: this.state.agentes, canais: this.state.canais, agendamentos: this.state.agendamentos, gcalUrl: this.state.gcalUrl, gcalSecret: this.state.gcalSecret };
+    try { localStorage.setItem('versatil_ca', JSON.stringify(snapshot)); } catch (e) {}
+    // sincroniza com o Supabase (compartilhado entre navegadores/dispositivos), com debounce
+    clearTimeout(this._caSyncT);
+    this._caSyncT = setTimeout(() => this.syncSharedConfig(snapshot), 900);
+  };
+  async syncSharedConfig(snapshot) {
+    try {
+      await this.api('POST', 'app_config', { body: { id: 'shared', data: snapshot, updated_at: new Date().toISOString() }, query: null }).catch(async () => {
+        // se já existir a linha, o POST falha por PK duplicada — tenta PATCH
+        await fetch(this.SUPA_URL + '/rest/v1/app_config?id=eq.shared', { method: 'PATCH', headers: this.headers({ Prefer: 'return=minimal' }), body: JSON.stringify({ data: snapshot, updated_at: new Date().toISOString() }) });
+      });
+    } catch (e) { console.warn('[app_config] falha ao sincronizar:', e.message || e); }
+  }
   // ---- agendamentos ----
   addAgendamento(ag) {
     const item = Object.assign({ id: 'ag' + Date.now() + Math.floor(Math.random() * 999), criadoEm: Date.now(), origem: 'IA' }, ag);
@@ -3788,6 +3806,14 @@ class Component extends DCLogic {
     this.setState({ agentEditor: true, agentTab: 'geral', form: this.normAgent(a) });
   }
   openNewAgent() {
+    this.setState({ agentEditor: true, agentTab: 'geral', form: this.normAgent({ nome: '', icon: 'ti-robot', cor: '#3b82f6', ativo: true, papel: 'atendimento', desc: '', promptSistema: 'Você é um assistente de atendimento. Responda em português do Brasil, curto e cordial.' }) });
+  }
+  openAgentConfig_DISABLED(id) {
+    const a = (this.state.agentes || []).find(x => x.id === id);
+    if (!a) return;
+    this.setState({ agentEditor: true, agentTab: 'geral', form: this.normAgent(a) });
+  }
+  openNewAgent_DISABLED() {
     this.setState({ agentEditor: true, agentTab: 'geral', form: this.normAgent({ nome: '', icon: 'ti-robot', cor: '#3b82f6', ativo: true, papel: 'atendimento', desc: '', promptSistema: 'Você é um assistente de atendimento da Versatil. Responda sempre em português do Brasil, de forma curta, cordial e útil.' }) });
   }
   closeAgentEditor() { this.setState({ agentEditor: false, form: {} }); }
@@ -3853,7 +3879,30 @@ class Component extends DCLogic {
       if (f.id) { list = s.agentes.map(a => a.id === f.id ? Object.assign({}, a, f) : a); }
       else { list = [...s.agentes, Object.assign({}, f, { id: 'ag' + Date.now() })]; }
       return { agentes: list, agentEditor: false, form: {} };
-    }, () => { this.persistCA(); this.toast('success', f.id ? 'Agente atualizado' : 'Agente criado'); const saved = this.state.agentes.find(a => a.nome === f.nome && (!f.id || a.id === f.id)); if (saved && saved.ativo) this.republishAgent(saved, true); });
+    }, () => { this.persistCA(); this.toast('success', f.id ? 'Agente atualizado' : 'Agente criado'); const saved = this.state.agentes.find(a => a.nome === f.nome && (!f.id || a.id === f.id)); if (saved && saved.ativo) { this.republishAgent(saved, true); this.syncAgentToWebhook(saved); } });
+  }
+  // envia a configuração do agente ao webhook (Vercel) para o servidor responder com esse prompt/chave/modelo
+  async syncAgentToWebhook(agent) {
+    // procura a URL do webhook em qualquer canal WhatsApp vinculado ao agente
+    let webhookUrl = '';
+    (agent.canais || []).forEach(cid => { const ch = this.chById(cid); if (ch && ch.uazapi && ch.uazapi.webhookUrl) webhookUrl = ch.uazapi.webhookUrl; });
+    if (!webhookUrl) { const w = (this.state.canais || []).find(c => c.uazapi && c.uazapi.webhookUrl); if (w) webhookUrl = w.uazapi.webhookUrl; }
+    if (!webhookUrl) return; // sem webhook configurado — nada a sincronizar
+    const configUrl = webhookUrl.replace(/\/api\/webhook\/?$/, '/api/config').replace(/\/webhook\/?$/, '/config');
+    const gk = ((agent.gemini && agent.gemini.apiKey) || '').trim();
+    const payload = {
+      prompt: this.buildAgentPrompt(agent, { multimodal: agent.ferramentas && agent.ferramentas.midia, whatsapp: true }),
+      geminiKey: gk,
+      model: (agent.forcarModelo || (agent.gemini && agent.gemini.model)) || 'gemini-flash-latest',
+      temperature: (agent.temperatura != null ? agent.temperatura : 0.5),
+      welcome: agent.boasVindas || '',
+      enabled: agent.ativo !== false,
+    };
+    try {
+      const r = await fetch(configUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      if (r.ok) this.toast('success', 'Configuração enviada ao webhook (servidor 24/7).');
+      else this.toast('info', 'Agente salvo. Não foi possível sincronizar com o webhook (' + r.status + ') — verifique se o endpoint /api/config existe no seu deploy.');
+    } catch (e) { this.toast('info', 'Agente salvo. Webhook não acessível para sincronizar agora (CORS/rede).'); }
   }
   deleteAgente(id) {
     this.setState(s => ({ agentes: s.agentes.filter(a => a.id !== id), agentEditor: false, form: {} }), () => { this.persistCA(); this.toast('info', 'Agente removido'); });
@@ -4209,9 +4258,8 @@ class Component extends DCLogic {
     if (auto && (conv.humano === true || conv.resolvida)) return;
     // se o agente responde pelo servidor (webhook), o navegador não responde (evita chave no cliente e resposta dupla)
     if (auto) {
-      const canalId0 = conv.canalId || (conv.source === 'wpp' ? (this.wppConnectedChannel() || {}).id : null);
-      const ag0 = (canalId0 && (S.agentes || []).find(a => a.ativo && (a.canais || []).includes(canalId0))) || (S.agentes || []).find(a => a.ativo && a.papel === 'atendimento') || (S.agentes || []).find(a => a.ativo);
-      if (ag0 && ag0.respostaVia === 'webhook') return;
+      // MODO WEBHOOK GLOBAL: o navegador nunca responde automaticamente; quem responde é o webhook (Vercel).
+      return;
     }
     // não responde duas vezes à mesma mensagem
     const lastMsg = conv.msgs[conv.msgs.length - 1];
