@@ -1676,6 +1676,7 @@
 <x-dc>
 <helmet>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.11.0/dist/tabler-icons.min.css">
+<script>window.__VERSATIL_BUILD__ = "1783560227405";</script>
 <style>
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;height:100%;}
@@ -3227,6 +3228,18 @@ POLÍTICAS: trocas em até 7 dias com nota." style="padding:14px 15px;border:1px
   </sc-if>
 
 </div>
+  <!-- ============ BANNER DE ATUALIZAÇÃO ============ -->
+  <sc-if value="{{ updateAvailable }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:9999;background:#1a2b42;color:#fff;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.35);padding:14px 16px;display:flex;align-items:center;gap:14px;max-width:calc(100vw - 40px);">
+      <div style="width:36px;height:36px;border-radius:50%;background:rgba(59,130,246,.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="ti ti-sparkles" style="font-size:19px;color:#60a5fa;"></i></div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:700;font-size:14px;">Nova atualização disponível</div>
+        <div style="font-size:12.5px;color:rgba(255,255,255,.7);">Uma versão mais recente do app foi publicada.</div>
+      </div>
+      <button onClick="{{ onReloadApp }}" style="background:#3b82f6;color:#fff;border:none;border-radius:10px;padding:10px 16px;font-weight:700;font-size:13.5px;cursor:pointer;white-space:nowrap;flex-shrink:0;">Atualizar agora</button>
+    </div>
+  </sc-if>
+
 </x-dc>
 <script type="text/x-dc" data-dc-script>
 class Component extends DCLogic {
@@ -3263,8 +3276,22 @@ class Component extends DCLogic {
   SUPA_URL = 'https://kvxsqbfwakfqdxzilvix.supabase.co';
   SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2eHNxYmZ3YWtmcWR4emlsdml4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExNzQ0MjYsImV4cCI6MjA5Njc1MDQyNn0.PQads0GXVlNqr11K5co65XbWYoZJWu4V-4h4AR5DdpU';
 
-  componentDidMount() { this.loadAll(); this.seedAtendimento(); setTimeout(() => this.checkRetornosIA(), 800); this._pollMsgs = setInterval(() => this.pollNovasMensagens(), 12000); setTimeout(() => this.startSSE(), 1500); }
-  componentWillUnmount() { clearInterval(this._pollMsgs); this.stopSSE(); }
+  componentDidMount() { this.loadAll(); this.seedAtendimento(); setTimeout(() => this.checkRetornosIA(), 800); this._pollMsgs = setInterval(() => this.pollNovasMensagens(), 12000); this._updCheck = setInterval(() => this.checkForUpdate(), 60000); setTimeout(() => this.startSSE(), 1500); }
+  componentWillUnmount() { clearInterval(this._pollMsgs); clearInterval(this._updCheck); this.stopSSE(); }
+  // --- verificação de atualização publicada (Vercel) ---
+  async checkForUpdate() {
+    try {
+      const res = await fetch(location.pathname + '?_v=' + Date.now(), { cache: 'no-store' });
+      const txt = await res.text();
+      const m = txt.match(/__VERSATIL_BUILD__\s*=\s*"([^"]+)"/);
+      const remote = m && m[1];
+      const local = window.__VERSATIL_BUILD__;
+      if (remote && local && remote !== local && local !== '1783560227405') {
+        this.setState({ updateAvailable: true });
+      }
+    } catch (e) { /* silencioso: sem rede ou CORS */ }
+  }
+  reloadApp = () => location.reload();
   // --- SSE: stream ao vivo da uazapi (push, sem servidor externo) ---
   startSSE() {
     const ch = this.wppConnectedChannel();
@@ -3315,7 +3342,8 @@ class Component extends DCLogic {
     // tenta carregar a configuração compartilhada do Supabase (mesma em qualquer navegador/dispositivo)
     let shared = null;
     try { const rows = await this.api('GET', 'app_config', { query: "id=eq.shared&select=data" }); shared = rows && rows[0] && rows[0].data; } catch (e) { console.warn('[app_config] não foi possível carregar do Supabase:', e.message || e); }
-    if (shared) saved = shared;
+    // conversas NUNCA vem do config compartilhado (fonte real: WhatsApp/localStorage) — evita apagar conversas ao sincronizar
+    if (shared) { const localConv = saved && saved.conversas; saved = Object.assign({}, saved || {}, shared); if (localConv) saved.conversas = localConv; }
     const defAgentes = [
       { id: 'ag1', nome: 'Atendente Virtual', icon: 'ti-headset', cor: '#3b82f6', ativo: true, papel: 'atendimento', desc: 'Responde dúvidas de clientes automaticamente com base no histórico da conversa.', tom: 'Cordial e objetivo', modelo: 'Claude Haiku', gatilho: 'Mensagem recebida', gemini: { apiKey: '', model: 'gemini-flash-latest' }, canais: [] },
       { id: 'ag2', nome: 'Qualificador de Leads', icon: 'ti-filter-check', cor: '#8b5cf6', ativo: false, papel: 'vendas', desc: 'Identifica intenção de compra e prioriza as conversas mais quentes.', tom: 'Consultivo', modelo: 'Claude Haiku', gatilho: 'Nova conversa', gemini: { apiKey: '', model: 'gemini-flash-latest' }, canais: [] },
@@ -3346,9 +3374,10 @@ class Component extends DCLogic {
   persistCA = () => {
     const snapshot = { conversas: this.state.conversas, agentes: this.state.agentes, canais: this.state.canais, agendamentos: this.state.agendamentos, gcalUrl: this.state.gcalUrl, gcalSecret: this.state.gcalSecret };
     try { localStorage.setItem('versatil_ca', JSON.stringify(snapshot)); } catch (e) {}
-    // sincroniza com o Supabase (compartilhado entre navegadores/dispositivos), com debounce
+    // sincroniza com o Supabase (compartilhado entre navegadores/dispositivos) — SEM as conversas (fonte real: WhatsApp)
+    const shared = { agentes: snapshot.agentes, canais: snapshot.canais, agendamentos: snapshot.agendamentos, gcalUrl: snapshot.gcalUrl, gcalSecret: snapshot.gcalSecret };
     clearTimeout(this._caSyncT);
-    this._caSyncT = setTimeout(() => this.syncSharedConfig(snapshot), 900);
+    this._caSyncT = setTimeout(() => this.syncSharedConfig(shared), 900);
   };
   async syncSharedConfig(snapshot) {
     try {
@@ -4256,11 +4285,13 @@ class Component extends DCLogic {
     if (!auto && S.aiThinking) return;
     // no modo automático: só responde se a IA está no controle (não humano, não resolvido)
     if (auto && (conv.humano === true || conv.resolvida)) return;
-    // se o agente responde pelo servidor (webhook), o navegador não responde (evita chave no cliente e resposta dupla)
-    if (auto) {
-      // MODO WEBHOOK GLOBAL: o navegador nunca responde automaticamente; quem responde é o webhook (Vercel).
-      return;
-    }
+    const canalId = conv.canalId || (conv.source === 'wpp' ? (this.wppConnectedChannel() || {}).id : null);
+    const agent = (canalId && (S.agentes || []).find(a => a.ativo && (a.canais || []).includes(canalId)))
+      || (S.agentes || []).find(a => a.ativo && a.papel === 'atendimento')
+      || (S.agentes || []).find(a => a.ativo);
+    if (!agent) { if (!auto) this.toast('error', 'Ative um agente na aba Agentes IA para automatizar respostas'); return; }
+    // se o agente está configurado para responder pelo servidor (webhook), o navegador não responde (evita chave duplicada/resposta dupla)
+    if (auto && agent.respostaVia === 'webhook') return;
     // não responde duas vezes à mesma mensagem
     const lastMsg = conv.msgs[conv.msgs.length - 1];
     if (auto) {
@@ -4274,12 +4305,7 @@ class Component extends DCLogic {
       this._answering[conv.id] = Date.now();
       this._lastAnswered[conv.id] = key;
     }
-    const canalId = conv.canalId || (conv.source === 'wpp' ? (this.wppConnectedChannel() || {}).id : null);
-    const agent = (canalId && (S.agentes || []).find(a => a.ativo && (a.canais || []).includes(canalId)))
-      || (S.agentes || []).find(a => a.ativo && a.papel === 'atendimento')
-      || (S.agentes || []).find(a => a.ativo);
-    if (!agent) { if (!auto) this.toast('error', 'Ative um agente na aba Agentes IA para automatizar respostas'); return; }
-    if (auto) this.setState({ aiThinking: true }); else this.setState({ aiThinking: true });
+    this.setState({ aiThinking: true });
     let reply = '';
     let geminiErr = null;
     try {
@@ -4541,7 +4567,9 @@ class Component extends DCLogic {
   renderVals() {
     const S = this.state, D = S.data, tab = S.tab;
     const isDash = tab === 'dashboard';
-
+    const vm = {};
+    vm.updateAvailable = !!S.updateAvailable;
+    vm.onReloadApp = this.reloadApp;
     // nav
     const baixoCount = D.estoque.filter(p => this.num(p.quantidade) < this.num(p.minimo)).length;
     const atrasadasCount = D.compras.filter(c => c.status === 'Atrasada').length;
@@ -4621,7 +4649,7 @@ class Component extends DCLogic {
       },
     }));
 
-    const vm = {
+    Object.assign(vm, {
       navGroups, isDashboard: isDash,
       pageTitle: titles[tab][0], pageSubtitle: titles[tab][1],
       connText: S.loading ? 'Conectando…' : S.connected ? 'Conectado ao Supabase' : 'Sem conexão',
@@ -4668,7 +4696,7 @@ class Component extends DCLogic {
       fornecedorOptions: D.fornecedores.map(f => f.nomefantasia || f.razaosocial).filter(Boolean),
       formItens: (S.form.itens || []).map((it, idx) => ({ idx, produto: it.produto, quantidade: it.quantidade, preco: it.preco, subtotalFmt: this.fmtMoney(this.num(it.quantidade) * this.num(it.preco)) })),
       formTotalFmt: this.fmtMoney((S.form.itens || []).reduce((a, it) => a + this.num(it.quantidade) * this.num(it.preco), 0)),
-    };
+    });
 
     // search / filter toolbar
     const showDetail = tab === 'compras' && !!S.viewCompra;
@@ -4973,7 +5001,7 @@ class Component extends DCLogic {
         avatarStyle: { width: '42px', height: '42px', borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 700, background: 'var(--color-background-tertiary)', color: 'var(--color-text-secondary)' },
       }));
       vm.convSearch = S.search.atendimento || '';
-      vm.convSearchPlaceholder = vm.isContatos ? 'Buscar contato por nome…' : (vm.isAgendamentos ? 'Buscar agendamento…' : 'Buscar por nome, número…');
+      vm.convSearchPlaceholder = vm.isContatos ? 'Buscar contato por nome…' : 'Buscar por nome, número…';
       vm.onConvSearch = (e) => this.setSearch(e.target.value);
       const conv = (S.conversas || []).find(c => c.id === S.activeConv);
       vm.hasConv = !!conv; vm.noConv = !conv;
