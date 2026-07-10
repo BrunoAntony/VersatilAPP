@@ -1676,7 +1676,7 @@
 <x-dc>
 <helmet>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.11.0/dist/tabler-icons.min.css">
-<script>window.__VERSATIL_BUILD__ = "1783705971274";</script>
+<script>window.__VERSATIL_BUILD__ = "1783706587264";</script>
 <style>
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;height:100%;}
@@ -2481,6 +2481,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid #3b82f6;outline-offset
                       <sc-if value="{{ attachMenuOpen }}" hint-placeholder-val="{{ false }}">
                         <div style="position:absolute;left:16px;bottom:60px;background:var(--color-background-primary);border:1px solid var(--color-border-tertiary);border-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,.18);padding:6px;display:flex;flex-direction:column;gap:2px;z-index:20;min-width:170px;">
                           <button onClick="{{ onPickImage }}" style="display:flex;align-items:center;gap:10px;background:none;border:none;cursor:pointer;padding:10px 12px;border-radius:9px;font-size:13.5px;font-weight:600;color:var(--color-text-primary);text-align:left;"><i class="ti ti-photo" style="font-size:18px;color:#3b82f6;"></i>Foto / Imagem</button>
+                          <button onClick="{{ onPickCatalogo }}" style="display:flex;align-items:center;gap:10px;background:none;border:none;cursor:pointer;padding:10px 12px;border-radius:9px;font-size:13.5px;font-weight:600;color:var(--color-text-primary);text-align:left;white-space:nowrap;"><i class="ti ti-category" style="font-size:18px;color:#f59e0b;"></i>Fotos do catálogo</button>
                           <button onClick="{{ onPickDoc }}" style="display:flex;align-items:center;gap:10px;background:none;border:none;cursor:pointer;padding:10px 12px;border-radius:9px;font-size:13.5px;font-weight:600;color:var(--color-text-primary);text-align:left;"><i class="ti ti-file-text" style="font-size:18px;color:#6d28d9;"></i>Documento</button>
                           <button onClick="{{ onPickAudio }}" style="display:flex;align-items:center;gap:10px;background:none;border:none;cursor:pointer;padding:10px 12px;border-radius:9px;font-size:13.5px;font-weight:600;color:var(--color-text-primary);text-align:left;"><i class="ti ti-microphone" style="font-size:18px;color:#16a34a;"></i>Áudio</button>
                         </div>
@@ -3223,9 +3224,47 @@ POLÍTICAS: trocas em até 7 dias com nota." style="padding:14px 15px;border:1px
               <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:var(--color-text-secondary);">Chave de API do Google Drive
                 <input name="driveApiKey" value="{{ form.driveApiKey }}" onInput="{{ onFormChange }}" placeholder="AIza..." style="padding:11px 13px;border:1px solid var(--color-border-tertiary);border-radius:9px;background:var(--color-background-primary);">
               </label>
-              <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:2px;">
-                <button onClick="{{ closeModal }}" style="background:var(--color-background-tertiary);color:var(--color-text-primary);border:none;border-radius:10px;padding:11px 20px;font-weight:600;font-size:14px;cursor:pointer;">Cancelar</button>
-                <button onClick="{{ saveModal }}" style="background:#1a73e8;color:#fff;border:none;border-radius:10px;padding:11px 22px;font-weight:600;font-size:14px;cursor:pointer;">Salvar</button>
+            </div>
+          </sc-if>
+
+          <!-- ENVIAR FOTOS DO CATÁLOGO NA CONVERSA (seleção múltipla) -->
+          <sc-if value="{{ m_catpicker }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:14px;">
+              <input value="{{ catPickerSearch }}" onInput="{{ onCatPickerSearch }}" placeholder="Buscar categoria, subcategoria ou tag..." style="padding:10px 13px;border:1px solid var(--color-border-tertiary);border-radius:9px;background:var(--color-background-primary);">
+              <div style="max-height:48vh;overflow-y:auto;display:flex;flex-direction:column;gap:16px;padding-right:2px;">
+                <sc-for list="{{ catPickerGroups }}" as="cat" hint-placeholder-count="1">
+                  <div>
+                    <div style="font-weight:700;font-size:13.5px;margin-bottom:8px;">{{ cat.nome }}</div>
+                    <sc-for list="{{ cat.subs }}" as="sc" hint-placeholder-count="1">
+                      <div style="margin-bottom:12px;">
+                        <div style="font-size:12px;color:var(--color-text-secondary);font-weight:600;margin-bottom:6px;">{{ sc.nome }}</div>
+                        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:8px;">
+                          <sc-for list="{{ sc.imgs }}" as="img" hint-placeholder-count="0">
+                            <div onClick="{{ img.onToggle }}" style="{{ img.boxStyle }}">
+                              <img src="{{ img.url }}" style="width:100%;height:100%;object-fit:cover;display:block;">
+                              <sc-if value="{{ img.tag }}" hint-placeholder-val="{{ false }}">
+                                <span style="position:absolute;bottom:0;left:0;right:0;background:rgba(10,18,32,.72);color:#fff;font-size:9px;font-weight:600;text-align:center;padding:2px 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ img.tag }}</span>
+                              </sc-if>
+                              <sc-if value="{{ img.selected }}" hint-placeholder-val="{{ false }}">
+                                <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(22,163,74,.4);display:flex;align-items:center;justify-content:center;">
+                                  <div style="width:22px;height:22px;border-radius:50%;background:#16a34a;color:#fff;display:flex;align-items:center;justify-content:center;"><i class="ti ti-check" style="font-size:14px;"></i></div>
+                                </div>
+                              </sc-if>
+                            </div>
+                          </sc-for>
+                        </div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-for>
+                <sc-if value="{{ catPickerEmpty }}" hint-placeholder-val="{{ false }}"><div style="padding:30px;text-align:center;color:var(--color-text-secondary);font-size:13.5px;">Nenhuma foto encontrada no catálogo.</div></sc-if>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:10px;border-top:1px solid var(--color-border-tertiary);">
+                <span style="font-size:12.5px;color:var(--color-text-secondary);font-weight:600;">{{ catPickerSelCount }} selecionada(s)</span>
+                <div style="display:flex;gap:10px;">
+                  <button onClick="{{ closeModal }}" style="background:var(--color-background-tertiary);color:var(--color-text-primary);border:none;border-radius:10px;padding:10px 18px;font-weight:600;font-size:13.5px;cursor:pointer;">Cancelar</button>
+                  <button onClick="{{ onSendCatalogoPicker }}" disabled="{{ catPickerSelEmpty }}" style="{{ catPickerSendStyle }}">Enviar</button>
+                </div>
               </div>
             </div>
           </sc-if>
@@ -3448,6 +3487,8 @@ class Component extends DCLogic {
     catalogoAberto: {},
     catalogoTags: [],
     catalogoTagInput: '',
+    catalogoPickerSel: [],
+    catalogoPickerSearch: '',
     convTab: 'pendente',
     convFonte: 'todas',
     activeConv: null,
@@ -4113,6 +4154,27 @@ class Component extends DCLogic {
     };
     reader.readAsDataURL(file);
   };
+  // ---- enviar fotos do catálogo direto na conversa (seleção múltipla) ----
+  onPickCatalogo = () => { this.setState({ attachMenuOpen: false, modal: 'catalogo_picker', catalogoPickerSel: [], catalogoPickerSearch: '' }); };
+  toggleCatalogoPickerImg(img) {
+    this.setState(s => {
+      const sel = s.catalogoPickerSel || [];
+      const exists = sel.some(x => x.url === img.url);
+      return { catalogoPickerSel: exists ? sel.filter(x => x.url !== img.url) : [...sel, img] };
+    });
+  }
+  onCatalogoPickerSearch = (e) => this.setState({ catalogoPickerSearch: e.target.value });
+  async sendCatalogoPicker() {
+    const sel = this.state.catalogoPickerSel || [];
+    if (!sel.length) return;
+    this.setState({ modal: null, form: {}, chatDraft: '' });
+    for (const img of sel) {
+      const nome = (img.tag || img.subNome || 'produto').toLowerCase().replace(/[^a-z0-9]+/g, '_');
+      await this.sendChat({ type: 'image', url: img.url, fileName: nome + '.jpg' });
+      await new Promise(r => setTimeout(r, 500)); // evita rajada/flood na uazapi
+    }
+    this.toast('success', sel.length + (sel.length === 1 ? ' imagem enviada' : ' imagens enviadas'));
+  }
   humanSize(b) { if (!b) return ''; const u = ['B','KB','MB','GB']; let i = 0; while (b >= 1024 && i < 3) { b /= 1024; i++; } return b.toFixed(b < 10 && i > 0 ? 1 : 0) + ' ' + u[i]; }
   hhmm() { const d = new Date(); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
   async sendChat(media) {
@@ -5018,12 +5080,13 @@ class Component extends DCLogic {
       showAdd: ['vendas', 'compras', 'despesas', 'estoque', 'clientes', 'fornecedores', 'produtos'].includes(tab) && !S.viewCompra, addLabel: addLabels[tab] || '', openAdd: () => this.openAdd(),
       stop: (e) => e.stopPropagation(),
       // modal
-      showModal: !!S.modal, modalTitle: { nova_venda: 'Nova Venda', nova_compra: 'Nova Ordem de Compra', nova_despesa: 'Nova Despesa', novo_produto: 'Novo Produto', novo_cliente: 'Novo Cliente', novo_fornecedor: 'Novo Fornecedor', nova_categoria: (S.form && S.form._id) ? 'Editar Categoria' : 'Nova Categoria', subcategoria: (S.form && S.form._id) ? 'Editar Subcategoria' : 'Nova Subcategoria', config_agente: S.form && S.form.id ? 'Configurar Agente' : 'Novo Agente', config_canal: S.form && S.form._new ? 'Adicionar Canal' : 'Configurar Canal', conectar_wpp: 'Conectar WhatsApp', nova_conversa: 'Nova Conversa', renomear_conv: 'Renomear Contato', add_cliente_conv: 'Adicionar aos Clientes', excluir_conv: 'Excluir Conversa', novo_agendamento: 'Novo Agendamento', gcal_config: 'Sincronizar Google Agenda', drive_config: 'Fotos do Catálogo via Google Drive' }[S.modal] || '',
+      showModal: !!S.modal, modalTitle: { nova_venda: 'Nova Venda', nova_compra: 'Nova Ordem de Compra', nova_despesa: 'Nova Despesa', novo_produto: 'Novo Produto', novo_cliente: 'Novo Cliente', novo_fornecedor: 'Novo Fornecedor', nova_categoria: (S.form && S.form._id) ? 'Editar Categoria' : 'Nova Categoria', subcategoria: (S.form && S.form._id) ? 'Editar Subcategoria' : 'Nova Subcategoria', config_agente: S.form && S.form.id ? 'Configurar Agente' : 'Novo Agente', config_canal: S.form && S.form._new ? 'Adicionar Canal' : 'Configurar Canal', conectar_wpp: 'Conectar WhatsApp', nova_conversa: 'Nova Conversa', renomear_conv: 'Renomear Contato', add_cliente_conv: 'Adicionar aos Clientes', excluir_conv: 'Excluir Conversa', novo_agendamento: 'Novo Agendamento', gcal_config: 'Sincronizar Google Agenda', drive_config: 'Fotos do Catálogo via Google Drive', catalogo_picker: 'Enviar fotos do catálogo' }[S.modal] || '',
       m_venda: S.modal === 'nova_venda', m_compra: S.modal === 'nova_compra', m_despesa: S.modal === 'nova_despesa', m_produto: S.modal === 'novo_produto', m_cliente: S.modal === 'novo_cliente', m_fornecedor: S.modal === 'novo_fornecedor', m_categoria: S.modal === 'nova_categoria', m_subcategoria: S.modal === 'subcategoria',
       m_agente: S.modal === 'config_agente', m_canal: S.modal === 'config_canal', m_wpp: S.modal === 'conectar_wpp', m_novaconv: S.modal === 'nova_conversa',
-      m_renomear: S.modal === 'renomear_conv', m_addcli: S.modal === 'add_cliente_conv', m_excluirconv: S.modal === 'excluir_conv', m_agendamento: S.modal === 'novo_agendamento', m_gcal: S.modal === 'gcal_config', m_drive: S.modal === 'drive_config',
+      m_renomear: S.modal === 'renomear_conv', m_addcli: S.modal === 'add_cliente_conv', m_excluirconv: S.modal === 'excluir_conv', m_agendamento: S.modal === 'novo_agendamento', m_gcal: S.modal === 'gcal_config', m_drive: S.modal === 'drive_config', m_catpicker: S.modal === 'catalogo_picker',
       onDoExcluirConv: () => this.doExcluirConv(),
-      showModalFooter: !!S.modal && S.modal !== 'conectar_wpp' && S.modal !== 'config_canal' && S.modal !== 'nova_conversa' && S.modal !== 'renomear_conv' && S.modal !== 'add_cliente_conv' && S.modal !== 'excluir_conv' && S.modal !== 'novo_agendamento' && S.modal !== 'gcal_config',
+      onSendCatalogoPicker: () => this.sendCatalogoPicker(),
+      showModalFooter: !!S.modal && S.modal !== 'conectar_wpp' && S.modal !== 'config_canal' && S.modal !== 'nova_conversa' && S.modal !== 'renomear_conv' && S.modal !== 'add_cliente_conv' && S.modal !== 'excluir_conv' && S.modal !== 'novo_agendamento' && S.modal !== 'gcal_config' && S.modal !== 'catalogo_picker',
       agenteIsEdit: !!(S.form && S.form.id),
       onDeleteAgente: () => this.deleteAgente(S.form.id),
       onCanalUaChange: this.onCanalUaChange, onGeminiChange: this.onGeminiChange,
@@ -5061,6 +5124,45 @@ class Component extends DCLogic {
       tipoProdutoHasImagens: (S.form.imagens || []).length > 0,
       onCatalogoImageChosen: this.onCatalogoImageChosen,
     });
+
+    // seletor de fotos do catálogo p/ enviar direto na conversa
+    if (S.modal === 'catalogo_picker') {
+      const sel = S.catalogoPickerSel || [];
+      const isSel = (url) => sel.some(x => x.url === url);
+      const t = (S.catalogoPickerSearch || '').toLowerCase();
+      vm.catPickerSearch = S.catalogoPickerSearch || '';
+      vm.onCatPickerSearch = this.onCatalogoPickerSearch;
+      const groups = (S.catalogo || []).map(cat => {
+        const subs = (cat.subcategorias || []).map(sub => {
+          const imgs = (sub.imagens || []).filter(im => im && im.url && (!t || (cat.nome || '').toLowerCase().includes(t) || (sub.nome || '').toLowerCase().includes(t) || (im.tag || '').toLowerCase().includes(t)));
+          return { sub, imgs };
+        }).filter(x => x.imgs.length > 0);
+        return { cat, subs };
+      }).filter(x => x.subs.length > 0);
+      vm.catPickerGroups = groups.map(({ cat, subs }) => ({
+        id: cat.id,
+        nome: cat.nome,
+        subs: subs.map(({ sub, imgs }) => ({
+          id: sub.id,
+          nome: sub.nome,
+          imgs: imgs.map((im, i) => {
+            const selected = isSel(im.url);
+            return {
+              url: im.url,
+              tag: im.tag || '',
+              key: sub.id + '_' + i,
+              selected,
+              boxStyle: { position: 'relative', width: '100%', aspectRatio: '1', borderRadius: '8px', overflow: 'hidden', cursor: 'pointer', border: selected ? '3px solid #16a34a' : '1px solid var(--color-border-tertiary)' },
+              onToggle: () => this.toggleCatalogoPickerImg({ url: im.url, tag: im.tag, subNome: sub.nome, catNome: cat.nome }),
+            };
+          }),
+        })),
+      }));
+      vm.catPickerEmpty = groups.length === 0;
+      vm.catPickerSelCount = sel.length;
+      vm.catPickerSelEmpty = sel.length === 0;
+      vm.catPickerSendStyle = { background: '#16a34a', color: '#fff', border: 'none', borderRadius: '10px', padding: '10px 20px', fontWeight: 600, fontSize: '13.5px', cursor: sel.length ? 'pointer' : 'not-allowed', opacity: sel.length ? 1 : .5 };
+    }
 
     // search / filter toolbar
     const showDetail = tab === 'compras' && !!S.viewCompra;
@@ -5564,6 +5666,7 @@ class Component extends DCLogic {
       vm.onToggleEmoji = this.toggleEmoji; vm.onToggleAttach = this.toggleAttachMenu;
       vm.emojis = this.emojiList().map(e => ({ e: e, onClick: () => this.insertEmoji(e) }));
       vm.onPickImage = () => this.pickAttachment('image');
+      vm.onPickCatalogo = this.onPickCatalogo;
       vm.onPickDoc = () => this.pickAttachment('document');
       vm.onPickAudio = () => this.pickAttachment('audio');
       vm.onFileChosen = this.onFileChosen;
