@@ -1676,7 +1676,7 @@
 <x-dc>
 <helmet>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.11.0/dist/tabler-icons.min.css">
-<script>window.__VERSATIL_BUILD__ = "1783704478736";</script>
+<script>window.__VERSATIL_BUILD__ = "1783704975836";</script>
 <style>
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;height:100%;}
@@ -2250,36 +2250,25 @@ input:focus,select:focus,textarea:focus{outline:2px solid #3b82f6;outline-offset
                         <sc-if value="{{ sc.hasDrive }}" hint-placeholder-val="{{ false }}">
                           <a href="{{ sc.driveUrl }}" target="_blank" rel="noopener" onClick="{{ stop }}" style="display:inline-flex;align-items:center;gap:6px;width:fit-content;background:var(--color-background-info);color:var(--color-text-info);border-radius:7px;padding:5px 10px;font-size:11.5px;font-weight:600;text-decoration:none;"><i class="ti ti-brand-google-drive" style="font-size:14px;"></i>Fotos via Drive</a>
                         </sc-if>
+                        <sc-if value="{{ sc.hasTags }}" hint-placeholder-val="{{ false }}">
+                          <div style="display:flex;flex-wrap:wrap;gap:5px;">
+                            <sc-for list="{{ sc.tags }}" as="tg" hint-placeholder-count="0">
+                              <span style="background:var(--color-background-secondary);border:1px solid var(--color-border-tertiary);color:var(--color-text-secondary);border-radius:999px;padding:2px 9px;font-size:11px;font-weight:600;">{{ tg.nome }}</span>
+                            </sc-for>
+                          </div>
+                        </sc-if>
                         <sc-if value="{{ sc.hasImagens }}" hint-placeholder-val="{{ false }}">
                           <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(56px,1fr));gap:6px;">
                             <sc-for list="{{ sc.imagensList }}" as="img" hint-placeholder-count="0">
-                              <div style="width:100%;aspect-ratio:1;border-radius:7px;overflow:hidden;border:1px solid var(--color-border-tertiary);">
+                              <div style="position:relative;width:100%;aspect-ratio:1;border-radius:7px;overflow:hidden;border:1px solid var(--color-border-tertiary);">
                                 <img src="{{ img.url }}" style="width:100%;height:100%;object-fit:cover;display:block;">
+                                <sc-if value="{{ img.tag }}" hint-placeholder-val="{{ false }}">
+                                  <span style="position:absolute;bottom:0;left:0;right:0;background:rgba(10,18,32,.72);color:#fff;font-size:9px;font-weight:600;text-align:center;padding:2px 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ img.tag }}</span>
+                                </sc-if>
                               </div>
                             </sc-for>
                           </div>
                         </sc-if>
-                        <div style="margin-top:2px;border-top:1px dashed var(--color-border-tertiary);padding-top:9px;">
-                          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;">
-                            <span style="font-size:11px;font-weight:700;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.4px;">Estilos</span>
-                            <button onClick="{{ sc.onAddEstilo }}" style="background:none;border:none;color:var(--color-text-info);cursor:pointer;font-size:11.5px;font-weight:600;display:inline-flex;align-items:center;gap:4px;padding:2px;"><i class="ti ti-plus" style="font-size:13px;"></i>Adicionar</button>
-                          </div>
-                          <sc-if value="{{ sc.hasEstilos }}" hint-placeholder-val="{{ false }}">
-                            <div style="display:flex;flex-direction:column;gap:6px;">
-                              <sc-for list="{{ sc.estilos }}" as="es" hint-placeholder-count="0">
-                                <div style="display:flex;align-items:center;gap:8px;background:var(--color-background-primary);border:1px solid var(--color-border-tertiary);border-radius:8px;padding:6px 9px;">
-                                  <sc-if value="{{ es.thumb }}" hint-placeholder-val="{{ false }}">
-                                    <img src="{{ es.thumb }}" style="width:26px;height:26px;border-radius:6px;object-fit:cover;flex-shrink:0;">
-                                  </sc-if>
-                                  <div style="flex:1;min-width:0;font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ es.nome }}</div>
-                                  <sc-if value="{{ es.hasDrive }}" hint-placeholder-val="{{ false }}"><i class="ti ti-brand-google-drive" title="Fotos via Drive" style="font-size:13px;color:var(--color-text-info);flex-shrink:0;"></i></sc-if>
-                                  <button onClick="{{ es.onEdit }}" style="background:none;border:none;color:var(--color-text-secondary);cursor:pointer;padding:2px;flex-shrink:0;"><i class="ti ti-pencil" style="font-size:13px;"></i></button>
-                                  <button onClick="{{ es.onDelete }}" style="background:none;border:none;color:var(--color-text-danger);cursor:pointer;padding:2px;flex-shrink:0;"><i class="ti ti-trash" style="font-size:13px;"></i></button>
-                                </div>
-                              </sc-for>
-                            </div>
-                          </sc-if>
-                        </div>
                       </div>
                     </sc-for>
                   </div>
@@ -3068,44 +3057,15 @@ POLÍTICAS: trocas em até 7 dias com nota." style="padding:14px 15px;border:1px
                     <input type="file" accept="image/*" multiple="{{ true }}" onChange="{{ onCatalogoImageChosen }}" style="display:none;">
                   </label>
                 </div>
-                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:10px;">
+                <div style="font-size:12px;color:var(--color-text-secondary);line-height:1.5;margin-bottom:10px;">Dê uma "tag" de estilo pra cada imagem (ex: Clássico, Floral, Minimalista) — assim o agente de IA envia a foto certa quando o cliente pedir um estilo específico. Deixe em branco se a imagem não for de um estilo em particular.</div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px;">
                   <sc-for list="{{ tipoProdutoImagens }}" as="img" hint-placeholder-count="0">
-                    <div style="position:relative;width:100%;aspect-ratio:1;border-radius:9px;overflow:hidden;border:1px solid var(--color-border-tertiary);">
-                      <img src="{{ img.url }}" style="width:100%;height:100%;object-fit:cover;display:block;">
-                      <button onClick="{{ img.onRemove }}" style="position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;background:rgba(10,18,32,.7);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;"><i class="ti ti-x" style="font-size:13px;"></i></button>
-                    </div>
-                  </sc-for>
-                </div>
-              </div>
-            </div>
-          </sc-if>
-
-          <!-- ESTILO (3º nível do CATÁLOGO, dentro de uma subcategoria) -->
-          <sc-if value="{{ m_estilo }}" hint-placeholder-val="{{ false }}">
-            <div style="display:flex;flex-direction:column;gap:16px;">
-              <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:var(--color-text-secondary);">Nome do estilo
-                <input name="nome" value="{{ form.nome }}" onInput="{{ onFormChange }}" placeholder="ex: Clássico, Temático, Minimalista, Floral" style="padding:11px 13px;border:1px solid var(--color-border-tertiary);border-radius:9px;background:var(--color-background-primary);">
-              </label>
-              <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:var(--color-text-secondary);">Breve descrição
-                <textarea name="descricao" value="{{ form.descricao }}" onInput="{{ onFormChange }}" rows="3" placeholder="Descreva brevemente esse estilo" style="padding:11px 13px;border:1px solid var(--color-border-tertiary);border-radius:9px;background:var(--color-background-primary);font-family:inherit;resize:vertical;"></textarea>
-              </label>
-              <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:var(--color-text-secondary);">Pasta do Google Drive (opcional)
-                <input name="driveFolderId" value="{{ form.driveFolderId }}" onInput="{{ onFormChange }}" placeholder="Cole o link ou ID da pasta pública do Drive" style="padding:11px 13px;border:1px solid var(--color-border-tertiary);border-radius:9px;background:var(--color-background-primary);">
-              </label>
-              <div style="font-size:12px;color:var(--color-text-secondary);line-height:1.5;margin-top:-8px;">Se preenchida, o agente de IA busca as fotos direto dessa pasta (não precisa fazer upload manual). A pasta precisa estar compartilhada como "Qualquer pessoa com o link" e a chave do Drive precisa estar configurada (botão "Google Drive" no topo da página).</div>
-              <div>
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-                  <span style="font-size:13px;font-weight:600;color:var(--color-text-secondary);">Imagens de modelos</span>
-                  <label style="display:inline-flex;align-items:center;gap:6px;background:var(--color-background-secondary);border:1px solid var(--color-border-tertiary);border-radius:8px;padding:8px 12px;font-size:12.5px;font-weight:600;cursor:pointer;">
-                    <i class="ti ti-photo-plus" style="font-size:16px;"></i>Adicionar imagens
-                    <input type="file" accept="image/*" multiple="{{ true }}" onChange="{{ onCatalogoImageChosen }}" style="display:none;">
-                  </label>
-                </div>
-                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:10px;">
-                  <sc-for list="{{ tipoProdutoImagens }}" as="img" hint-placeholder-count="0">
-                    <div style="position:relative;width:100%;aspect-ratio:1;border-radius:9px;overflow:hidden;border:1px solid var(--color-border-tertiary);">
-                      <img src="{{ img.url }}" style="width:100%;height:100%;object-fit:cover;display:block;">
-                      <button onClick="{{ img.onRemove }}" style="position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;background:rgba(10,18,32,.7);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;"><i class="ti ti-x" style="font-size:13px;"></i></button>
+                    <div style="display:flex;flex-direction:column;gap:5px;">
+                      <div style="position:relative;width:100%;aspect-ratio:1;border-radius:9px;overflow:hidden;border:1px solid var(--color-border-tertiary);">
+                        <img src="{{ img.url }}" style="width:100%;height:100%;object-fit:cover;display:block;">
+                        <button onClick="{{ img.onRemove }}" style="position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;background:rgba(10,18,32,.7);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;"><i class="ti ti-x" style="font-size:13px;"></i></button>
+                      </div>
+                      <input value="{{ img.tag }}" onInput="{{ img.onTag }}" placeholder="tag (ex: floral)" style="width:100%;padding:5px 7px;border:1px solid var(--color-border-tertiary);border-radius:6px;background:var(--color-background-primary);font-size:11px;">
                     </div>
                   </sc-for>
                 </div>
@@ -3601,14 +3561,25 @@ class Component extends DCLogic {
   // ---------- catálogo de produtos (tipos) ----------
   // Guardado à parte (linha própria em app_config) para não engordar/atrasar
   // a sincronização de agentes/canais/agendamentos com as imagens (dataURL).
-  // catalogo = [{ id, nome, subcategorias: [{ id, nome, descricao, imagens }] }]
+  // catalogo = [{ id, nome, subcategorias: [{ id, nome, descricao, driveFolderId, imagens: [{ url, tag }] }] }]
+  // "tag" = estilo da imagem (ex: Clássico, Floral, Minimalista) — cada imagem tem a sua, não é mais um nível separado.
+  normImagem(im) { return (im && typeof im === 'object') ? { url: im.url || '', tag: im.tag || '' } : { url: im || '', tag: '' }; }
   normCatalogo(list) {
     return (list || []).map(c => {
       if (Array.isArray(c.subcategorias)) {
-        return Object.assign({}, c, { subcategorias: c.subcategorias.map(s => Object.assign({}, s, { estilos: Array.isArray(s.estilos) ? s.estilos : [] })) });
+        return Object.assign({}, c, {
+          subcategorias: c.subcategorias.map(s => {
+            // migra o antigo 3º nível "estilos" (containers separados) para tags nas próprias imagens
+            const fromEstilos = (Array.isArray(s.estilos) ? s.estilos : []).flatMap(es => (es.imagens || []).map(im => Object.assign(this.normImagem(im), { tag: es.nome || '' })));
+            const imagens = (s.imagens || []).map(im => this.normImagem(im)).concat(fromEstilos);
+            const out = Object.assign({}, s, { imagens });
+            delete out.estilos;
+            return out;
+          }),
+        });
       }
       // migra formato antigo (tipo de produto plano, sem categoria) para uma categoria com 1 subcategoria
-      return { id: c.id, nome: c.nome, subcategorias: [{ id: c.id + '_sub', nome: c.nome, descricao: c.descricao || '', imagens: c.imagens || [], estilos: [] }] };
+      return { id: c.id, nome: c.nome, subcategorias: [{ id: c.id + '_sub', nome: c.nome, descricao: c.descricao || '', imagens: (c.imagens || []).map(im => this.normImagem(im)) }] };
     });
   }
   async loadCatalogo() {
@@ -3657,7 +3628,7 @@ class Component extends DCLogic {
     this.setState(s => ({ catalogo: s.catalogo.filter(c => c.id !== id) }), () => { this.persistCatalogo(); this.toast('info', 'Categoria removida'); });
   }
   openSubcategoriaModal(catId, item) {
-    this.setState({ modal: 'subcategoria', form: { _catId: catId, _id: item ? item.id : null, nome: item ? item.nome : '', descricao: item ? item.descricao : '', imagens: item ? (item.imagens || []).slice() : [], driveFolderId: item ? (item.driveFolderId || '') : '' } });
+    this.setState({ modal: 'subcategoria', form: { _catId: catId, _id: item ? item.id : null, nome: item ? item.nome : '', descricao: item ? item.descricao : '', imagens: item ? (item.imagens || []).map(im => this.normImagem(im)) : [], driveFolderId: item ? (item.driveFolderId || '') : '' } });
   }
   // aceita tanto o ID puro quanto um link completo (https://drive.google.com/drive/folders/<ID>?usp=sharing)
   extractDriveFolderId(input) {
@@ -3677,12 +3648,16 @@ class Component extends DCLogic {
       reader.onload = () => resolve(reader.result);
       reader.readAsDataURL(file);
     }))).then(dataUrls => {
-      this.setState(s => ({ form: Object.assign({}, s.form, { imagens: [...(s.form.imagens || []), ...dataUrls] }) }));
+      const novas = dataUrls.map(url => ({ url, tag: '' }));
+      this.setState(s => ({ form: Object.assign({}, s.form, { imagens: [...(s.form.imagens || []), ...novas] }) }));
     });
     e.target.value = '';
   };
   removeCatalogoImage(idx) {
     this.setState(s => ({ form: Object.assign({}, s.form, { imagens: (s.form.imagens || []).filter((_, i) => i !== idx) }) }));
+  }
+  setCatalogoImageTag(idx, tag) {
+    this.setState(s => ({ form: Object.assign({}, s.form, { imagens: (s.form.imagens || []).map((im, i) => i === idx ? Object.assign({}, im, { tag }) : im) }) }));
   }
   saveSubcategoria() {
     const f = this.state.form;
@@ -3702,39 +3677,6 @@ class Component extends DCLogic {
   }
   deleteSubcategoria(catId, subId) {
     this.setState(s => ({ catalogo: s.catalogo.map(c => c.id !== catId ? c : Object.assign({}, c, { subcategorias: (c.subcategorias || []).filter(x => x.id !== subId) })) }), () => { this.persistCatalogo(); this.toast('info', 'Subcategoria removida'); });
-  }
-  // ---- estilos (3º nível, dentro de cada subcategoria: ex. Casamento > Clássico, Temático, Floral...) ----
-  openEstiloModal(catId, subId, item) {
-    this.setState({ modal: 'estilo', form: { _catId: catId, _subId: subId, _id: item ? item.id : null, nome: item ? item.nome : '', descricao: item ? item.descricao : '', imagens: item ? (item.imagens || []).slice() : [], driveFolderId: item ? (item.driveFolderId || '') : '' } });
-  }
-  saveEstilo() {
-    const f = this.state.form;
-    const nome = (f.nome || '').trim();
-    if (!f._catId || !f._subId) return this.toast('error', 'Subcategoria não encontrada');
-    if (!nome) return this.toast('error', 'Informe o nome do estilo');
-    const isEdit = !!f._id;
-    this.setState(s => {
-      const est = { id: isEdit ? f._id : this.genId(), nome, descricao: (f.descricao || '').trim(), imagens: f.imagens || [], driveFolderId: this.extractDriveFolderId(f.driveFolderId) };
-      const catalogo = s.catalogo.map(c => {
-        if (c.id !== f._catId) return c;
-        const subcategorias = (c.subcategorias || []).map(sub => {
-          if (sub.id !== f._subId) return sub;
-          const estilos = isEdit ? (sub.estilos || []).map(x => x.id === f._id ? est : x) : [est, ...(sub.estilos || [])];
-          return Object.assign({}, sub, { estilos });
-        });
-        return Object.assign({}, c, { subcategorias });
-      });
-      return { catalogo, modal: null, form: {} };
-    }, () => { this.persistCatalogo(); this.toast('success', isEdit ? 'Estilo atualizado' : 'Estilo cadastrado'); });
-  }
-  deleteEstilo(catId, subId, estId) {
-    this.setState(s => ({
-      catalogo: s.catalogo.map(c => {
-        if (c.id !== catId) return c;
-        const subcategorias = (c.subcategorias || []).map(sub => sub.id !== subId ? sub : Object.assign({}, sub, { estilos: (sub.estilos || []).filter(x => x.id !== estId) }));
-        return Object.assign({}, c, { subcategorias });
-      }),
-    }), () => { this.persistCatalogo(); this.toast('info', 'Estilo removido'); });
   }
   // ---- agendamentos ----
   addAgendamento(ag) {
@@ -4873,7 +4815,6 @@ class Component extends DCLogic {
     if (m === 'config_canal') return this.saveCanal();
     if (m === 'nova_categoria') return this.saveCategoria();
     if (m === 'subcategoria') return this.saveSubcategoria();
-    if (m === 'estilo') return this.saveEstilo();
     if (m === 'nova_venda') {
       if (!f.cliente || !f.valor) return this.toast('error', 'Informe cliente e valor');
       this.create('vendas', { id: this.genId(), cliente: f.cliente, produto: f.produto || '', valor: this.num(f.valor), data: f.data || this.today(), status: f.status || 'Pendente' }, 'vendas', 'Venda registrada');
@@ -5033,8 +4974,8 @@ class Component extends DCLogic {
       showAdd: ['vendas', 'compras', 'despesas', 'estoque', 'clientes', 'fornecedores', 'produtos'].includes(tab) && !S.viewCompra, addLabel: addLabels[tab] || '', openAdd: () => this.openAdd(),
       stop: (e) => e.stopPropagation(),
       // modal
-      showModal: !!S.modal, modalTitle: { nova_venda: 'Nova Venda', nova_compra: 'Nova Ordem de Compra', nova_despesa: 'Nova Despesa', novo_produto: 'Novo Produto', novo_cliente: 'Novo Cliente', novo_fornecedor: 'Novo Fornecedor', nova_categoria: (S.form && S.form._id) ? 'Editar Categoria' : 'Nova Categoria', subcategoria: (S.form && S.form._id) ? 'Editar Subcategoria' : 'Nova Subcategoria', config_agente: S.form && S.form.id ? 'Configurar Agente' : 'Novo Agente', config_canal: S.form && S.form._new ? 'Adicionar Canal' : 'Configurar Canal', conectar_wpp: 'Conectar WhatsApp', nova_conversa: 'Nova Conversa', renomear_conv: 'Renomear Contato', add_cliente_conv: 'Adicionar aos Clientes', excluir_conv: 'Excluir Conversa', novo_agendamento: 'Novo Agendamento', gcal_config: 'Sincronizar Google Agenda', drive_config: 'Fotos do Catálogo via Google Drive', estilo: (S.form && S.form._id) ? 'Editar Estilo' : 'Novo Estilo' }[S.modal] || '',
-      m_venda: S.modal === 'nova_venda', m_compra: S.modal === 'nova_compra', m_despesa: S.modal === 'nova_despesa', m_produto: S.modal === 'novo_produto', m_cliente: S.modal === 'novo_cliente', m_fornecedor: S.modal === 'novo_fornecedor', m_categoria: S.modal === 'nova_categoria', m_subcategoria: S.modal === 'subcategoria', m_estilo: S.modal === 'estilo',
+      showModal: !!S.modal, modalTitle: { nova_venda: 'Nova Venda', nova_compra: 'Nova Ordem de Compra', nova_despesa: 'Nova Despesa', novo_produto: 'Novo Produto', novo_cliente: 'Novo Cliente', novo_fornecedor: 'Novo Fornecedor', nova_categoria: (S.form && S.form._id) ? 'Editar Categoria' : 'Nova Categoria', subcategoria: (S.form && S.form._id) ? 'Editar Subcategoria' : 'Nova Subcategoria', config_agente: S.form && S.form.id ? 'Configurar Agente' : 'Novo Agente', config_canal: S.form && S.form._new ? 'Adicionar Canal' : 'Configurar Canal', conectar_wpp: 'Conectar WhatsApp', nova_conversa: 'Nova Conversa', renomear_conv: 'Renomear Contato', add_cliente_conv: 'Adicionar aos Clientes', excluir_conv: 'Excluir Conversa', novo_agendamento: 'Novo Agendamento', gcal_config: 'Sincronizar Google Agenda', drive_config: 'Fotos do Catálogo via Google Drive' }[S.modal] || '',
+      m_venda: S.modal === 'nova_venda', m_compra: S.modal === 'nova_compra', m_despesa: S.modal === 'nova_despesa', m_produto: S.modal === 'novo_produto', m_cliente: S.modal === 'novo_cliente', m_fornecedor: S.modal === 'novo_fornecedor', m_categoria: S.modal === 'nova_categoria', m_subcategoria: S.modal === 'subcategoria',
       m_agente: S.modal === 'config_agente', m_canal: S.modal === 'config_canal', m_wpp: S.modal === 'conectar_wpp', m_novaconv: S.modal === 'nova_conversa',
       m_renomear: S.modal === 'renomear_conv', m_addcli: S.modal === 'add_cliente_conv', m_excluirconv: S.modal === 'excluir_conv', m_agendamento: S.modal === 'novo_agendamento', m_gcal: S.modal === 'gcal_config', m_drive: S.modal === 'drive_config',
       onDoExcluirConv: () => this.doExcluirConv(),
@@ -5071,7 +5012,7 @@ class Component extends DCLogic {
       fornecedorOptions: D.fornecedores.map(f => f.nomefantasia || f.razaosocial).filter(Boolean),
       formItens: (S.form.itens || []).map((it, idx) => ({ idx, produto: it.produto, quantidade: it.quantidade, preco: it.preco, subtotalFmt: this.fmtMoney(this.num(it.quantidade) * this.num(it.preco)) })),
       formTotalFmt: this.fmtMoney((S.form.itens || []).reduce((a, it) => a + this.num(it.quantidade) * this.num(it.preco), 0)),
-      tipoProdutoImagens: (S.form.imagens || []).map((url, idx) => ({ url, idx, onRemove: () => this.removeCatalogoImage(idx) })),
+      tipoProdutoImagens: (S.form.imagens || []).map((im, idx) => ({ url: (im && im.url) || '', tag: (im && im.tag) || '', idx, onRemove: () => this.removeCatalogoImage(idx), onTag: (e) => this.setCatalogoImageTag(idx, e.target.value) })),
       tipoProdutoHasImagens: (S.form.imagens || []).length > 0,
       onCatalogoImageChosen: this.onCatalogoImageChosen,
     });
@@ -5304,27 +5245,23 @@ class Component extends DCLogic {
           onDelete: () => this.deleteCategoria(cat.id),
           onAddSub: (e) => { if (e) e.stopPropagation(); this.openSubcategoriaModal(cat.id, null); },
           subsEmpty: subs.length === 0,
-          subs: subs.map(sc => ({
-            id: sc.id,
-            nome: sc.nome,
-            descricao: sc.descricao || 'Sem descrição cadastrada.',
-            imagensList: (sc.imagens || []).map((url, i) => ({ url, key: sc.id + '_' + i })),
-            hasImagens: (sc.imagens || []).length > 0,
-            hasDrive: !!sc.driveFolderId,
-            driveUrl: sc.driveFolderId ? ('https://drive.google.com/drive/folders/' + sc.driveFolderId) : '',
-            onEdit: () => this.openSubcategoriaModal(cat.id, sc),
-            onDelete: () => this.deleteSubcategoria(cat.id, sc.id),
-            onAddEstilo: (e) => { if (e) e.stopPropagation(); this.openEstiloModal(cat.id, sc.id, null); },
-            hasEstilos: (sc.estilos || []).length > 0,
-            estilos: (sc.estilos || []).map(es => ({
-              id: es.id,
-              nome: es.nome,
-              thumb: (es.imagens && es.imagens[0]) || '',
-              hasDrive: !!es.driveFolderId,
-              onEdit: () => this.openEstiloModal(cat.id, sc.id, es),
-              onDelete: () => this.deleteEstilo(cat.id, sc.id, es.id),
-            })),
-          })),
+          subs: subs.map(sc => {
+            const imgs = sc.imagens || [];
+            const tags = [...new Set(imgs.map(im => (im && im.tag || '').trim()).filter(Boolean))];
+            return {
+              id: sc.id,
+              nome: sc.nome,
+              descricao: sc.descricao || 'Sem descrição cadastrada.',
+              imagensList: imgs.map((im, i) => ({ url: (im && im.url) || '', tag: (im && im.tag) || '', key: sc.id + '_' + i })),
+              hasImagens: imgs.length > 0,
+              hasDrive: !!sc.driveFolderId,
+              driveUrl: sc.driveFolderId ? ('https://drive.google.com/drive/folders/' + sc.driveFolderId) : '',
+              hasTags: tags.length > 0,
+              tags: tags.map(t => ({ nome: t, key: sc.id + '_tag_' + t })),
+              onEdit: () => this.openSubcategoriaModal(cat.id, sc),
+              onDelete: () => this.deleteSubcategoria(cat.id, sc.id),
+            };
+          }),
         };
       });
       vm.catalogoEmpty = filtradas.length === 0;
