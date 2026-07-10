@@ -1676,7 +1676,7 @@
 <x-dc>
 <helmet>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.11.0/dist/tabler-icons.min.css">
-<script>window.__VERSATIL_BUILD__ = "1783714421604";</script>
+<script>window.__VERSATIL_BUILD__ = "1783716418266";</script>
 <style>
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;height:100%;}
@@ -1801,10 +1801,25 @@ input:focus,select:focus,textarea:focus{outline:2px solid #3b82f6;outline-offset
       </sc-for>
     </nav>
 
-    <div style="padding:16px 20px;border-top:1px solid rgba(255,255,255,.07);display:flex;align-items:center;gap:10px;">
+    <div style="padding:10px 20px 6px;display:flex;align-items:center;gap:8px;">
       <span style="{{ connDotStyle }}"></span>
-      <span style="font-size:12.5px;color:#8ea3c2;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ authEmail }}">{{ connText }}</span>
-      <button onClick="{{ doLogout }}" title="Sair" style="background:none;border:none;color:#8ea3c2;cursor:pointer;padding:4px;flex-shrink:0;display:flex;"><i class="ti ti-logout" style="font-size:17px;"></i></button>
+      <span style="font-size:11.5px;color:#8ea3c2;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ connText }}</span>
+    </div>
+    <div style="padding:10px 20px 16px;border-top:1px solid rgba(255,255,255,.07);position:relative;">
+      <sc-if value="{{ accountMenuOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;left:20px;right:20px;bottom:66px;background:var(--color-background-primary);color:var(--color-text-primary);border:1px solid var(--color-border-tertiary);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.35);padding:6px;display:flex;flex-direction:column;gap:2px;z-index:60;">
+          <button onClick="{{ onOpenChangePassword }}" style="display:flex;align-items:center;gap:10px;background:none;border:none;cursor:pointer;padding:10px 12px;border-radius:9px;font-size:13px;font-weight:600;color:var(--color-text-primary);text-align:left;"><i class="ti ti-key" style="font-size:16px;"></i>Alterar senha</button>
+          <button onClick="{{ doLogout }}" style="display:flex;align-items:center;gap:10px;background:none;border:none;cursor:pointer;padding:10px 12px;border-radius:9px;font-size:13px;font-weight:600;color:var(--color-text-danger);text-align:left;"><i class="ti ti-logout" style="font-size:16px;"></i>Sair</button>
+        </div>
+      </sc-if>
+      <div style="display:flex;align-items:center;gap:10px;padding-top:6px;">
+        <div style="width:34px;height:34px;border-radius:50%;background:#3b82f6;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;">{{ authInitials }}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:600;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ authUsername }}</div>
+          <div style="font-size:11px;color:#8ea3c2;">Conectado</div>
+        </div>
+        <button onClick="{{ onToggleAccountMenu }}" title="Configurações da conta" style="background:none;border:none;color:#8ea3c2;cursor:pointer;padding:5px;flex-shrink:0;display:flex;"><i class="ti ti-settings" style="font-size:19px;"></i></button>
+      </div>
     </div>
   </aside>
 
@@ -3229,6 +3244,21 @@ POLÍTICAS: trocas em até 7 dias com nota." style="padding:14px 15px;border:1px
             </div>
           </sc-if>
 
+          <!-- ALTERAR SENHA -->
+          <sc-if value="{{ m_changepw }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:16px;">
+              <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:var(--color-text-secondary);">Senha atual
+                <input name="currentPassword" type="password" value="{{ form.currentPassword }}" onInput="{{ onFormChange }}" placeholder="••••••••" style="padding:11px 13px;border:1px solid var(--color-border-tertiary);border-radius:9px;background:var(--color-background-primary);">
+              </label>
+              <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:var(--color-text-secondary);">Nova senha
+                <input name="newPassword" type="password" value="{{ form.newPassword }}" onInput="{{ onFormChange }}" placeholder="mínimo 6 caracteres" style="padding:11px 13px;border:1px solid var(--color-border-tertiary);border-radius:9px;background:var(--color-background-primary);">
+              </label>
+              <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:var(--color-text-secondary);">Confirmar nova senha
+                <input name="confirmPassword" type="password" value="{{ form.confirmPassword }}" onInput="{{ onFormChange }}" placeholder="repita a nova senha" style="padding:11px 13px;border:1px solid var(--color-border-tertiary);border-radius:9px;background:var(--color-background-primary);">
+              </label>
+            </div>
+          </sc-if>
+
           <!-- ENVIAR FOTOS DO CATÁLOGO NA CONVERSA (seleção múltipla) -->
           <sc-if value="{{ m_catpicker }}" hint-placeholder-val="{{ false }}">
             <div style="display:flex;flex-direction:column;gap:14px;">
@@ -3520,6 +3550,7 @@ class Component extends DCLogic {
     authForm: { username: '', password: '' },
     authError: '',
     authBusy: false,
+    accountMenuOpen: false,
     tab: 'dashboard',
     data: { vendas: [], compras: [], despesas: [], estoque: [], clientes: [], fornecedores: [] },
     loading: true,
@@ -3625,6 +3656,35 @@ class Component extends DCLogic {
     clearInterval(this._pollMsgs); clearInterval(this._updCheck); this.stopSSE();
     this.setState({ authSession: null, authForm: { username: '', password: '' }, authError: '' });
   };
+  // ---- menu "Configurações" da conta (rodapé da sidebar) ----
+  CHANGE_PASSWORD_URL = 'https://webhook-blond-pi.vercel.app/api/change-password';
+  toggleAccountMenu = () => this.setState(s => ({ accountMenuOpen: !s.accountMenuOpen }));
+  openChangePassword() {
+    this.setState({ modal: 'change_password', accountMenuOpen: false, form: { currentPassword: '', newPassword: '', confirmPassword: '' } });
+  }
+  async saveChangePassword() {
+    const f = this.state.form || {};
+    const currentPassword = f.currentPassword || '';
+    const newPassword = f.newPassword || '';
+    const confirmPassword = f.confirmPassword || '';
+    if (!currentPassword || !newPassword) return this.toast('error', 'Informe a senha atual e a nova senha');
+    if (newPassword.length < 6) return this.toast('error', 'A nova senha precisa ter pelo menos 6 caracteres');
+    if (newPassword !== confirmPassword) return this.toast('error', 'A confirmação não bate com a nova senha');
+    const token = this.state.authSession && this.state.authSession.access_token;
+    try {
+      const r = await fetch(this.CHANGE_PASSWORD_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(data.error || 'Falha ao trocar a senha');
+      this.setState({ modal: null, form: {} });
+      this.toast('success', 'Senha alterada com sucesso');
+    } catch (e) {
+      this.toast('error', (e && e.message) || 'Falha ao trocar a senha');
+    }
+  }
   // --- verificação de atualização publicada (Vercel) ---
   async checkForUpdate() {
     try {
@@ -5039,6 +5099,7 @@ class Component extends DCLogic {
     if (m === 'novo_agendamento') return this.saveNovoAgendamento();
     if (m === 'gcal_config') return this.saveGcalConfig();
     if (m === 'drive_config') return this.saveDriveConfig();
+    if (m === 'change_password') return this.saveChangePassword();
     if (m === 'config_canal') return this.saveCanal();
     if (m === 'nova_categoria') return this.saveCategoria();
     if (m === 'subcategoria') return this.saveSubcategoria();
@@ -5114,11 +5175,16 @@ class Component extends DCLogic {
     vm.authed = !S.authChecking && !!S.authSession;
     vm.showLogin = !S.authChecking && !S.authSession;
     vm.authEmail = (S.authSession && S.authSession.username) || '';
+    vm.authUsername = (S.authSession && S.authSession.username) || '';
+    vm.authInitials = vm.authUsername ? vm.authUsername.slice(0, 2).toUpperCase() : '?';
     vm.authForm = S.authForm || { username: '', password: '' };
     vm.onAuthField = this.onAuthField;
     vm.onAuthKey = this.onAuthKey;
     vm.doLogin = this.doLogin;
     vm.doLogout = this.doLogout;
+    vm.accountMenuOpen = !!S.accountMenuOpen;
+    vm.onToggleAccountMenu = this.toggleAccountMenu;
+    vm.onOpenChangePassword = () => this.openChangePassword();
     vm.authError = S.authError || '';
     vm.authBusy = !!S.authBusy;
     vm.authBtnLabel = S.authBusy ? 'Entrando…' : 'Entrar';
@@ -5216,10 +5282,10 @@ class Component extends DCLogic {
       showAdd: ['vendas', 'compras', 'despesas', 'estoque', 'clientes', 'fornecedores', 'produtos'].includes(tab) && !S.viewCompra, addLabel: addLabels[tab] || '', openAdd: () => this.openAdd(),
       stop: (e) => e.stopPropagation(),
       // modal
-      showModal: !!S.modal, modalTitle: { nova_venda: 'Nova Venda', nova_compra: 'Nova Ordem de Compra', nova_despesa: 'Nova Despesa', novo_produto: 'Novo Produto', novo_cliente: 'Novo Cliente', novo_fornecedor: 'Novo Fornecedor', nova_categoria: (S.form && S.form._id) ? 'Editar Categoria' : 'Nova Categoria', subcategoria: (S.form && S.form._id) ? 'Editar Subcategoria' : 'Nova Subcategoria', config_agente: S.form && S.form.id ? 'Configurar Agente' : 'Novo Agente', config_canal: S.form && S.form._new ? 'Adicionar Canal' : 'Configurar Canal', conectar_wpp: 'Conectar WhatsApp', nova_conversa: 'Nova Conversa', renomear_conv: 'Renomear Contato', add_cliente_conv: 'Adicionar aos Clientes', excluir_conv: 'Excluir Conversa', novo_agendamento: 'Novo Agendamento', gcal_config: 'Sincronizar Google Agenda', drive_config: 'Fotos do Catálogo via Google Drive', catalogo_picker: 'Enviar fotos do catálogo' }[S.modal] || '',
+      showModal: !!S.modal, modalTitle: { nova_venda: 'Nova Venda', nova_compra: 'Nova Ordem de Compra', nova_despesa: 'Nova Despesa', novo_produto: 'Novo Produto', novo_cliente: 'Novo Cliente', novo_fornecedor: 'Novo Fornecedor', nova_categoria: (S.form && S.form._id) ? 'Editar Categoria' : 'Nova Categoria', subcategoria: (S.form && S.form._id) ? 'Editar Subcategoria' : 'Nova Subcategoria', config_agente: S.form && S.form.id ? 'Configurar Agente' : 'Novo Agente', config_canal: S.form && S.form._new ? 'Adicionar Canal' : 'Configurar Canal', conectar_wpp: 'Conectar WhatsApp', nova_conversa: 'Nova Conversa', renomear_conv: 'Renomear Contato', add_cliente_conv: 'Adicionar aos Clientes', excluir_conv: 'Excluir Conversa', novo_agendamento: 'Novo Agendamento', gcal_config: 'Sincronizar Google Agenda', drive_config: 'Fotos do Catálogo via Google Drive', catalogo_picker: 'Enviar fotos do catálogo', change_password: 'Alterar Senha' }[S.modal] || '',
       m_venda: S.modal === 'nova_venda', m_compra: S.modal === 'nova_compra', m_despesa: S.modal === 'nova_despesa', m_produto: S.modal === 'novo_produto', m_cliente: S.modal === 'novo_cliente', m_fornecedor: S.modal === 'novo_fornecedor', m_categoria: S.modal === 'nova_categoria', m_subcategoria: S.modal === 'subcategoria',
       m_agente: S.modal === 'config_agente', m_canal: S.modal === 'config_canal', m_wpp: S.modal === 'conectar_wpp', m_novaconv: S.modal === 'nova_conversa',
-      m_renomear: S.modal === 'renomear_conv', m_addcli: S.modal === 'add_cliente_conv', m_excluirconv: S.modal === 'excluir_conv', m_agendamento: S.modal === 'novo_agendamento', m_gcal: S.modal === 'gcal_config', m_drive: S.modal === 'drive_config', m_catpicker: S.modal === 'catalogo_picker',
+      m_renomear: S.modal === 'renomear_conv', m_addcli: S.modal === 'add_cliente_conv', m_excluirconv: S.modal === 'excluir_conv', m_agendamento: S.modal === 'novo_agendamento', m_gcal: S.modal === 'gcal_config', m_drive: S.modal === 'drive_config', m_catpicker: S.modal === 'catalogo_picker', m_changepw: S.modal === 'change_password',
       onDoExcluirConv: () => this.doExcluirConv(),
       onSendCatalogoPicker: () => this.sendCatalogoPicker(),
       showModalFooter: !!S.modal && S.modal !== 'conectar_wpp' && S.modal !== 'config_canal' && S.modal !== 'nova_conversa' && S.modal !== 'renomear_conv' && S.modal !== 'add_cliente_conv' && S.modal !== 'excluir_conv' && S.modal !== 'novo_agendamento' && S.modal !== 'gcal_config' && S.modal !== 'catalogo_picker',

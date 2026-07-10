@@ -12,6 +12,7 @@
 //                               (Supabase → Settings → API → JWT Secret)
 // ============================================================
 const crypto = require('crypto');
+const jwt = require('./_jwt');
 
 const SUPA_URL = 'https://kvxsqbfwakfqdxzilvix.supabase.co';
 const SUPA_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2eHNxYmZ3YWtmcWR4emlsdml4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExNzQ0MjYsImV4cCI6MjA5Njc1MDQyNn0.PQads0GXVlNqr11K5co65XbWYoZJWu4V-4h4AR5DdpU';
@@ -53,7 +54,7 @@ module.exports = async (req, res) => {
     const now = Math.floor(Date.now() / 1000);
     const exp = now + SESSION_HOURS * 3600;
     const payload = { aud: 'authenticated', role: 'authenticated', sub: user.id, username: user.username, iat: now, exp: exp };
-    const access_token = signJwtHS256(payload, jwtSecret);
+    const access_token = jwt.sign(payload, jwtSecret);
 
     return res.status(200).json({ access_token: access_token, expires_at: exp * 1000, username: user.username });
   } catch (e) {
@@ -61,15 +62,3 @@ module.exports = async (req, res) => {
     return res.status(500).json({ error: String((e && e.message) || e) });
   }
 };
-
-function base64url(buf) {
-  return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
-function signJwtHS256(payload, secret) {
-  const header = { alg: 'HS256', typ: 'JWT' };
-  const h = base64url(Buffer.from(JSON.stringify(header)));
-  const p = base64url(Buffer.from(JSON.stringify(payload)));
-  const data = h + '.' + p;
-  const sig = crypto.createHmac('sha256', secret).update(data).digest();
-  return data + '.' + base64url(sig);
-}
