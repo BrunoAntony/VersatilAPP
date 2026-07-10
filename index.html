@@ -1676,7 +1676,7 @@
 <x-dc>
 <helmet>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.11.0/dist/tabler-icons.min.css">
-<script>window.__VERSATIL_BUILD__ = "1783688184741";</script>
+<script>window.__VERSATIL_BUILD__ = "1783690159602";</script>
 <style>
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;height:100%;}
@@ -1717,13 +1717,51 @@ input:focus,select:focus,textarea:focus{outline:2px solid #3b82f6;outline-offset
 @keyframes modalIn{from{opacity:0;transform:translateY(12px) scale(.99);}to{opacity:1;transform:none;}}
 @keyframes spin{to{transform:rotate(360deg);}}
 .msg-row:hover .msg-actions{opacity:1 !important;}
+
+/* ===== Responsivo (diferentes resoluções e monitores) ===== */
+.app-table{ min-width:640px; }
+@media (max-width:1440px){
+  .app-content{ padding:24px 26px !important; }
+}
+@media (max-width:1200px){
+  .app-sidebar{ width:212px !important; }
+}
+@media (max-width:1024px){
+  .app-grid-2{ grid-template-columns:1fr !important; }
+  .app-grid-15{ grid-template-columns:1fr !important; }
+  .app-editor-tabs{ width:190px !important; }
+}
+@media (max-width:900px){
+  .app-atendimento-grid{ grid-template-columns:1fr !important; grid-template-rows:320px 1fr !important; }
+  .app-grid-3{ grid-template-columns:repeat(2,1fr) !important; }
+}
+@media (max-width:768px){
+  .app-shell{ flex-direction:column; height:auto; min-height:100vh; }
+  .app-sidebar{ width:100% !important; max-height:42vh; }
+  .app-header{ padding:16px 18px !important; }
+  .app-content{ padding:16px !important; }
+  .app-editor-body{ flex-direction:column; overflow:visible !important; }
+  .app-editor-tabs{ width:100% !important; flex-direction:row !important; overflow-x:auto !important; max-height:none; border-right:none !important; border-bottom:1px solid var(--color-border-tertiary); }
+  .app-editor-content{ padding:20px 18px !important; }
+}
+@media (max-width:600px){
+  .app-grid-3{ grid-template-columns:1fr !important; }
+  .app-atendimento-grid{ grid-template-rows:280px 1fr !important; }
+}
+@media (max-width:480px){
+  .app-modal-overlay{ padding:10px !important; }
+  .app-modal-header{ padding:16px 18px !important; }
+  .app-modal-body{ padding:18px !important; }
+  [style*="grid-template-columns:1fr 1fr 1fr"]{ grid-template-columns:1fr !important; }
+  [style*="grid-template-columns:1fr 1fr"]{ grid-template-columns:1fr !important; }
+}
 </style>
 </helmet>
 
-<div style="display:flex;height:100vh;width:100%;font-family:var(--font);background:var(--color-background-secondary);color:var(--color-text-primary);overflow:hidden;">
+<div class="app-shell" style="display:flex;height:100vh;width:100%;font-family:var(--font);background:var(--color-background-secondary);color:var(--color-text-primary);overflow:hidden;">
 
   <!-- ============ SIDEBAR ============ -->
-  <aside style="width:248px;flex-shrink:0;background:#1a2b42;color:#aebed4;display:flex;flex-direction:column;padding:0;">
+  <aside class="app-sidebar" style="width:248px;flex-shrink:0;background:#1a2b42;color:#aebed4;display:flex;flex-direction:column;padding:0;">
     <div style="display: flex; align-items: center; gap: 12px; padding: 22px 22px 20px; background: linear-gradient(180deg, #015f1a, #000000)">
       <div style="width: 38px; height: 38px; border-radius: 10px; background: linear-gradient(135deg,#3b82f6,#22d3ee); display: flex; align-items: center; justify-content: center; color: #ffffff; flex-shrink: 0">
         <i class="ti ti-chart-pie-2" style="font-size:22px;"></i>
@@ -1770,7 +1808,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid #3b82f6;outline-offset
 
   <!-- ============ MAIN ============ -->
   <main style="flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;">
-    <header style="display: flex; align-items: center; justify-content: space-between; padding: 20px 32px; background: linear-gradient(180deg, #005f0c, #000000); border-bottom: 1px solid var(--color-border-tertiary); flex-shrink: 0; width: 1320px; height: 68px">
+    <header class="app-header" style="display: flex; align-items: center; justify-content: space-between; padding: 20px 32px; background: linear-gradient(180deg, #005f0c, #000000); border-bottom: 1px solid var(--color-border-tertiary); flex-shrink: 0; width: 100%; min-height: 68px; flex-wrap: wrap; gap: 12px;">
       <div>
         <h1 style="margin:0;font-size:21px;font-weight:700;letter-spacing:-.3px;">{{ pageTitle }}</h1>
         <p style="margin:3px 0 0;font-size:13px;color:var(--color-text-secondary);">{{ pageSubtitle }}</p>
@@ -1782,12 +1820,12 @@ input:focus,select:focus,textarea:focus{outline:2px solid #3b82f6;outline-offset
       </sc-if>
     </header>
 
-    <div style="flex:1;overflow-y:auto;padding:28px 32px;">
+    <div class="app-content" style="flex:1;overflow-y:auto;padding:28px 32px;">
 
       <!-- ===== DASHBOARD ===== -->
       <sc-if value="{{ isDashboard }}" hint-placeholder-val="{{ true }}">
         <div>
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:20px;">
+          <div class="app-grid-3" style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:20px;">
             <sc-for list="{{ dashCards }}" as="c" hint-placeholder-count="6">
               <div style="background:var(--color-background-primary);border:1px solid var(--color-border-tertiary);border-radius:var(--radius);padding:20px;display:flex;align-items:flex-start;justify-content:space-between;">
                 <div>
@@ -1799,7 +1837,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid #3b82f6;outline-offset
             </sc-for>
           </div>
 
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:20px;">
+          <div class="app-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:20px;">
             <div style="background:var(--color-background-primary);border:1px solid var(--color-border-tertiary);border-radius:var(--radius);padding:22px;">
               <div style="font-weight:600;font-size:15px;margin-bottom:18px;">Vendas por mês</div>
               <div style="display:flex;align-items:flex-end;gap:14px;height:170px;">
@@ -1840,10 +1878,10 @@ input:focus,select:focus,textarea:focus{outline:2px solid #3b82f6;outline-offset
             </div>
           </sc-if>
 
-          <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:18px;">
+          <div class="app-grid-15" style="display:grid;grid-template-columns:1.5fr 1fr;gap:18px;">
             <div style="background:var(--color-background-primary);border:1px solid var(--color-border-tertiary);border-radius:var(--radius);padding:22px;">
               <div style="font-weight:600;font-size:15px;margin-bottom:14px;">Últimas ordens de compra</div>
-              <table style="width:100%;border-collapse:collapse;">
+              <table class="app-table" style="width:100%;border-collapse:collapse;display:block;overflow-x:auto;">
                 <thead><tr>
                   <th style="text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--color-text-secondary);font-weight:600;padding:8px 6px;">Fornecedor</th>
                   <th style="text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--color-text-secondary);font-weight:600;padding:8px 6px;">Data</th>
@@ -1938,7 +1976,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid #3b82f6;outline-offset
       <!-- ===== VENDAS TABLE ===== -->
       <sc-if value="{{ isVendas }}" hint-placeholder-val="{{ false }}">
         <div style="background:var(--color-background-primary);border:1px solid var(--color-border-tertiary);border-radius:var(--radius);overflow:hidden;">
-          <table style="width:100%;border-collapse:collapse;">
+          <table class="app-table" style="width:100%;border-collapse:collapse;display:block;overflow-x:auto;">
             <thead><tr style="background:var(--color-background-secondary);">
               <th style="text-align:left;padding:13px 18px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--color-text-secondary);font-weight:600;">Cliente</th>
               <th style="text-align:left;padding:13px 18px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--color-text-secondary);font-weight:600;">Produto</th>
@@ -1972,7 +2010,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid #3b82f6;outline-offset
       <!-- ===== COMPRAS LIST ===== -->
       <sc-if value="{{ showComprasList }}" hint-placeholder-val="{{ false }}">
         <div style="background:var(--color-background-primary);border:1px solid var(--color-border-tertiary);border-radius:var(--radius);overflow:hidden;">
-          <table style="width:100%;border-collapse:collapse;">
+          <table class="app-table" style="width:100%;border-collapse:collapse;display:block;overflow-x:auto;">
             <thead><tr style="background:var(--color-background-secondary);">
               <th style="text-align:left;padding:13px 18px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--color-text-secondary);font-weight:600;">Fornecedor</th>
               <th style="text-align:left;padding:13px 18px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--color-text-secondary);font-weight:600;">Pedido</th>
@@ -2022,7 +2060,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid #3b82f6;outline-offset
             </div>
           </div>
           <div style="background:var(--color-background-primary);border:1px solid var(--color-border-tertiary);border-radius:var(--radius);overflow:hidden;margin-bottom:18px;">
-            <table style="width:100%;border-collapse:collapse;">
+            <table class="app-table" style="width:100%;border-collapse:collapse;display:block;overflow-x:auto;">
               <thead><tr style="background:var(--color-background-secondary);">
                 <th style="text-align:left;padding:13px 18px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--color-text-secondary);font-weight:600;">Produto</th>
                 <th style="text-align:right;padding:13px 18px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--color-text-secondary);font-weight:600;">Qtd</th>
@@ -2054,7 +2092,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid #3b82f6;outline-offset
       <!-- ===== DESPESAS TABLE ===== -->
       <sc-if value="{{ isDespesas }}" hint-placeholder-val="{{ false }}">
         <div style="background:var(--color-background-primary);border:1px solid var(--color-border-tertiary);border-radius:var(--radius);overflow:hidden;">
-          <table style="width:100%;border-collapse:collapse;">
+          <table class="app-table" style="width:100%;border-collapse:collapse;display:block;overflow-x:auto;">
             <thead><tr style="background:var(--color-background-secondary);">
               <th style="text-align:left;padding:13px 18px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--color-text-secondary);font-weight:600;">Descrição</th>
               <th style="text-align:left;padding:13px 18px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--color-text-secondary);font-weight:600;">Categoria</th>
@@ -2081,7 +2119,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid #3b82f6;outline-offset
       <!-- ===== ESTOQUE TABLE ===== -->
       <sc-if value="{{ isEstoque }}" hint-placeholder-val="{{ false }}">
         <div style="background:var(--color-background-primary);border:1px solid var(--color-border-tertiary);border-radius:var(--radius);overflow:hidden;">
-          <table style="width:100%;border-collapse:collapse;">
+          <table class="app-table" style="width:100%;border-collapse:collapse;display:block;overflow-x:auto;">
             <thead><tr style="background:var(--color-background-secondary);">
               <th style="text-align:left;padding:13px 18px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--color-text-secondary);font-weight:600;">Produto</th>
               <th style="text-align:left;padding:13px 18px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--color-text-secondary);font-weight:600;">Categoria</th>
@@ -2116,7 +2154,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid #3b82f6;outline-offset
       <!-- ===== CLIENTES TABLE ===== -->
       <sc-if value="{{ isClientes }}" hint-placeholder-val="{{ false }}">
         <div style="background:var(--color-background-primary);border:1px solid var(--color-border-tertiary);border-radius:var(--radius);overflow:hidden;">
-          <table style="width:100%;border-collapse:collapse;">
+          <table class="app-table" style="width:100%;border-collapse:collapse;display:block;overflow-x:auto;">
             <thead><tr style="background:var(--color-background-secondary);">
               <th style="text-align:left;padding:13px 18px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--color-text-secondary);font-weight:600;">Cliente</th>
               <th style="text-align:left;padding:13px 18px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--color-text-secondary);font-weight:600;">Contato</th>
@@ -2208,7 +2246,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid #3b82f6;outline-offset
 
       <!-- ===== ATENDIMENTO ===== -->
       <sc-if value="{{ isAtendimento }}" hint-placeholder-val="{{ false }}">
-        <div style="display:grid;grid-template-columns:360px 1fr;gap:18px;height:calc(100vh - 168px);min-height:460px;">
+        <div class="app-atendimento-grid" style="display:grid;grid-template-columns:360px 1fr;gap:18px;height:calc(100vh - 168px);min-height:460px;">
           <!-- lista de conversas -->
           <div style="background:var(--color-background-primary);border:1px solid var(--color-border-tertiary);border-radius:var(--radius);display:flex;flex-direction:column;overflow:hidden;">
             <!-- toolbar -->
@@ -2485,7 +2523,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid #3b82f6;outline-offset
       <!-- ===== AGENTES IA ===== -->
       <sc-if value="{{ isAgentes }}" hint-placeholder-val="{{ false }}">
         <div>
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:22px;">
+          <div class="app-grid-3" style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:22px;">
             <sc-for list="{{ agentesStats }}" as="s" hint-placeholder-count="3">
               <div style="background:var(--color-background-primary);border:1px solid var(--color-border-tertiary);border-radius:var(--radius);padding:18px 20px;display:flex;align-items:center;gap:14px;">
                 <div style="{{ s.iconWrap }}"><i class="ti {{ s.icon }}" style="font-size:19px;"></i></div>
@@ -2589,15 +2627,15 @@ input:focus,select:focus,textarea:focus{outline:2px solid #3b82f6;outline-offset
         <button onClick="{{ aeSave }}" style="display:inline-flex;align-items:center;gap:7px;background:#16a34a;color:#fff;border:none;border-radius:9px;padding:10px 22px;font-weight:700;font-size:14px;cursor:pointer;"><i class="ti ti-device-floppy" style="font-size:17px;"></i>Salvar</button>
       </div>
       <!-- corpo: sidebar de abas + conteúdo -->
-      <div style="flex:1;display:flex;overflow:hidden;">
+      <div class="app-editor-body" style="flex:1;display:flex;overflow:hidden;">
         <!-- abas -->
-        <div style="width:230px;flex-shrink:0;background:var(--color-background-primary);border-right:1px solid var(--color-border-tertiary);padding:16px 12px;display:flex;flex-direction:column;gap:3px;overflow-y:auto;">
+        <div class="app-editor-tabs" style="width:230px;flex-shrink:0;background:var(--color-background-primary);border-right:1px solid var(--color-border-tertiary);padding:16px 12px;display:flex;flex-direction:column;gap:3px;overflow-y:auto;">
           <sc-for list="{{ aeTabs }}" as="t" hint-placeholder-count="8">
             <button onClick="{{ t.onClick }}" style="{{ t.style }}"><i class="ti {{ t.icon }}" style="font-size:18px;width:20px;text-align:center;"></i>{{ t.label }}</button>
           </sc-for>
         </div>
         <!-- conteúdo -->
-        <div style="flex:1;overflow-y:auto;padding:32px 40px;">
+        <div class="app-editor-content" style="flex:1;overflow-y:auto;padding:32px 40px;">
           <div style="max-width:720px;margin:0 auto;">
 
             <!-- GERAL -->
@@ -2802,13 +2840,13 @@ POLÍTICAS: trocas em até 7 dias com nota." style="padding:14px 15px;border:1px
 
   <!-- ============ MODAL ============ -->
   <sc-if value="{{ showModal }}" hint-placeholder-val="{{ false }}">
-    <div onClick="{{ closeModal }}" style="position:fixed;inset:0;background:rgba(10,18,32,.55);display:flex;align-items:center;justify-content:center;z-index:9000;padding:24px;">
+    <div class="app-modal-overlay" onClick="{{ closeModal }}" style="position:fixed;inset:0;background:rgba(10,18,32,.55);display:flex;align-items:center;justify-content:center;z-index:9000;padding:24px;">
       <div onClick="{{ stop }}" style="background:var(--color-background-primary);border-radius:16px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;animation:modalIn .2s ease;box-shadow:0 24px 60px rgba(0,0,0,.3);">
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:22px 26px;border-bottom:1px solid var(--color-border-tertiary);position:sticky;top:0;background:var(--color-background-primary);border-radius:16px 16px 0 0;">
+        <div class="app-modal-header" style="display:flex;align-items:center;justify-content:space-between;padding:22px 26px;border-bottom:1px solid var(--color-border-tertiary);position:sticky;top:0;background:var(--color-background-primary);border-radius:16px 16px 0 0;">
           <h2 style="margin:0;font-size:18px;font-weight:700;">{{ modalTitle }}</h2>
           <button onClick="{{ closeModal }}" style="background:none;border:none;cursor:pointer;color:var(--color-text-secondary);padding:4px;"><i class="ti ti-x" style="font-size:21px;"></i></button>
         </div>
-        <div style="padding:26px;">
+        <div class="app-modal-body" style="padding:26px;">
 
           <!-- NOVA VENDA -->
           <sc-if value="{{ m_venda }}" hint-placeholder-val="{{ false }}">
