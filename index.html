@@ -1676,7 +1676,7 @@
 <x-dc>
 <helmet>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.11.0/dist/tabler-icons.min.css">
-<script>window.__VERSATIL_BUILD__ = "1783712029639";</script>
+<script>window.__VERSATIL_BUILD__ = "1783714421604";</script>
 <style>
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;height:100%;}
@@ -3492,8 +3492,8 @@ POLÍTICAS: trocas em até 7 dias com nota." style="padding:14px 15px;border:1px
         <div style="background:var(--color-background-danger);color:var(--color-text-danger);border-radius:9px;padding:10px 13px;font-size:13px;margin-bottom:16px;">{{ authError }}</div>
       </sc-if>
       <div style="display:flex;flex-direction:column;gap:14px;">
-        <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:var(--color-text-secondary);">Email
-          <input name="email" type="email" value="{{ authForm.email }}" onInput="{{ onAuthField }}" onKeyDown="{{ onAuthKey }}" placeholder="voce@empresa.com" style="padding:12px 14px;border:1px solid var(--color-border-tertiary);border-radius:10px;background:var(--color-background-secondary);font-size:14px;">
+        <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:var(--color-text-secondary);">Usuário
+          <input name="username" type="text" autocapitalize="off" autocomplete="username" value="{{ authForm.username }}" onInput="{{ onAuthField }}" onKeyDown="{{ onAuthKey }}" placeholder="seu usuário" style="padding:12px 14px;border:1px solid var(--color-border-tertiary);border-radius:10px;background:var(--color-background-secondary);font-size:14px;">
         </label>
         <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:var(--color-text-secondary);">Senha
           <input name="password" type="password" value="{{ authForm.password }}" onInput="{{ onAuthField }}" onKeyDown="{{ onAuthKey }}" placeholder="••••••••" style="padding:12px 14px;border:1px solid var(--color-border-tertiary);border-radius:10px;background:var(--color-background-secondary);font-size:14px;">
@@ -3517,7 +3517,7 @@ class Component extends DCLogic {
   state = {
     authChecking: true,
     authSession: null,
-    authForm: { email: '', password: '' },
+    authForm: { username: '', password: '' },
     authError: '',
     authBusy: false,
     tab: 'dashboard',
@@ -3562,32 +3562,22 @@ class Component extends DCLogic {
   componentDidMount() { this.restoreSession(() => { if (this.state.authSession) this.boot(); }); }
   componentWillUnmount() { clearInterval(this._pollMsgs); clearInterval(this._updCheck); this.stopSSE(); }
   boot() { this.loadAll(); this.seedAtendimento(); this.loadCatalogo(); setTimeout(() => this.checkRetornosIA(), 800); this._pollMsgs = setInterval(() => this.pollNovasMensagens(), 12000); this._updCheck = setInterval(() => this.checkForUpdate(), 60000); setTimeout(() => this.checkForUpdate(), 5000); setTimeout(() => this.startSSE(), 1500); }
-  // ---------- autenticação (Supabase Auth — conta única de administrador) ----------
-  async authSignIn(email, password) {
-    const r = await fetch(this.SUPA_URL + '/auth/v1/token?grant_type=password', {
-      method: 'POST', headers: { apikey: this.SUPA_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
+  // ---------- autenticação (usuário/senha próprios — tabela app_users no Supabase) ----------
+  // Não usa Supabase Auth: o servidor (webhook/api/login.js) confere a senha (hash) e devolve
+  // um JWT assinado com o mesmo JWT secret do projeto Supabase — as políticas de RLS
+  // (TO authenticated) aceitam esse token normalmente, como se fosse do Supabase Auth.
+  LOGIN_URL = 'https://webhook-blond-pi.vercel.app/api/login';
+  async authSignIn(username, password) {
+    const r = await fetch(this.LOGIN_URL, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
     });
     const data = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(data.error_description || data.msg || data.error || 'Falha no login');
-    return data;
-  }
-  async authRefresh(refreshToken) {
-    const r = await fetch(this.SUPA_URL + '/auth/v1/token?grant_type=refresh_token', {
-      method: 'POST', headers: { apikey: this.SUPA_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refresh_token: refreshToken }),
-    });
-    const data = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(data.error_description || data.msg || data.error || 'Sessão expirada');
+    if (!r.ok) throw new Error(data.error || 'Falha no login');
     return data;
   }
   saveSession(data) {
-    const session = {
-      access_token: data.access_token,
-      refresh_token: data.refresh_token,
-      expires_at: Date.now() + ((data.expires_in || 3600) * 1000),
-      email: (data.user && data.user.email) || (this.state.authSession && this.state.authSession.email) || '',
-    };
+    const session = { access_token: data.access_token, expires_at: data.expires_at, username: data.username || '' };
     try { localStorage.setItem('versatil_auth', JSON.stringify(session)); } catch (e) {}
     this.setState({ authSession: session });
     return session;
@@ -3595,45 +3585,36 @@ class Component extends DCLogic {
   restoreSession(cb) {
     let saved = null;
     try { saved = JSON.parse(localStorage.getItem('versatil_auth') || 'null'); } catch (e) {}
-    if (!saved || !saved.refresh_token) { this.setState({ authChecking: false }, cb); return; }
-    if (saved.expires_at && saved.expires_at > Date.now() + 60000) {
-      this.setState({ authSession: saved, authChecking: false }, cb);
-      return;
-    }
-    this.authRefresh(saved.refresh_token).then(data => {
-      this.saveSession(data);
-      this.setState({ authChecking: false }, cb);
-    }).catch(() => {
+    if (!saved || !saved.access_token || !saved.expires_at || saved.expires_at <= Date.now()) {
       try { localStorage.removeItem('versatil_auth'); } catch (e) {}
       this.setState({ authSession: null, authChecking: false }, cb);
-    });
+      return;
+    }
+    this.setState({ authSession: saved, authChecking: false }, cb);
   }
-  // garante um access_token válido antes de cada chamada ao Supabase (renova se estiver perto de expirar)
+  // sessão expira em 12h sem renovação silenciosa — se estiver vencida, desloga e mostra o login de novo
   async ensureAuthFresh() {
     const s = this.state.authSession;
-    if (!s || !s.refresh_token) return;
-    if (s.expires_at && s.expires_at < Date.now() + 60000) {
-      try { this.saveSession(await this.authRefresh(s.refresh_token)); } catch (e) { this.doLogout(); }
-    }
+    if (s && s.expires_at && s.expires_at <= Date.now()) this.doLogout();
   }
   onAuthField = (e) => { const n = e.target.name, v = e.target.value; this.setState(s => ({ authForm: Object.assign({}, s.authForm, { [n]: v }) })); };
   onAuthKey = (e) => { if (e.key === 'Enter') { e.preventDefault(); this.doLogin(); } };
   authFriendly(e) {
     const m = (e && e.message) || String(e);
-    if (/invalid.*(credential|login)/i.test(m)) return 'Email ou senha incorretos.';
+    if (/inválidos/i.test(m)) return 'Usuário ou senha incorretos.';
     if (/Failed to fetch|NetworkError/i.test(m)) return 'Falha de rede — verifique sua conexão.';
     return m;
   }
   doLogin = async () => {
     const f = this.state.authForm || {};
-    const email = (f.email || '').trim();
+    const username = (f.username || '').trim();
     const password = f.password || '';
-    if (!email || !password) { this.setState({ authError: 'Informe email e senha' }); return; }
+    if (!username || !password) { this.setState({ authError: 'Informe usuário e senha' }); return; }
     this.setState({ authBusy: true, authError: '' });
     try {
-      const data = await this.authSignIn(email, password);
+      const data = await this.authSignIn(username, password);
       this.saveSession(data);
-      this.setState({ authBusy: false, authForm: { email: '', password: '' } });
+      this.setState({ authBusy: false, authForm: { username: '', password: '' } });
       this.boot();
     } catch (e) {
       this.setState({ authBusy: false, authError: this.authFriendly(e) });
@@ -3642,7 +3623,7 @@ class Component extends DCLogic {
   doLogout = () => {
     try { localStorage.removeItem('versatil_auth'); } catch (e) {}
     clearInterval(this._pollMsgs); clearInterval(this._updCheck); this.stopSSE();
-    this.setState({ authSession: null, authForm: { email: '', password: '' }, authError: '' });
+    this.setState({ authSession: null, authForm: { username: '', password: '' }, authError: '' });
   };
   // --- verificação de atualização publicada (Vercel) ---
   async checkForUpdate() {
@@ -5132,8 +5113,8 @@ class Component extends DCLogic {
     vm.authChecking = !!S.authChecking;
     vm.authed = !S.authChecking && !!S.authSession;
     vm.showLogin = !S.authChecking && !S.authSession;
-    vm.authEmail = (S.authSession && S.authSession.email) || '';
-    vm.authForm = S.authForm || { email: '', password: '' };
+    vm.authEmail = (S.authSession && S.authSession.username) || '';
+    vm.authForm = S.authForm || { username: '', password: '' };
     vm.onAuthField = this.onAuthField;
     vm.onAuthKey = this.onAuthKey;
     vm.doLogin = this.doLogin;
