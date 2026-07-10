@@ -1676,7 +1676,7 @@
 <x-dc>
 <helmet>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.11.0/dist/tabler-icons.min.css">
-<script>window.__VERSATIL_BUILD__ = "1783706587264";</script>
+<script>window.__VERSATIL_BUILD__ = "1783710282287";</script>
 <style>
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;height:100%;}
@@ -2893,7 +2893,7 @@ POLÍTICAS: trocas em até 7 dias com nota." style="padding:14px 15px;border:1px
   <!-- ============ MODAL ============ -->
   <sc-if value="{{ showModal }}" hint-placeholder-val="{{ false }}">
     <div class="app-modal-overlay" onClick="{{ closeModal }}" style="position:fixed;inset:0;background:rgba(10,18,32,.55);display:flex;align-items:center;justify-content:center;z-index:9000;padding:24px;">
-      <div onClick="{{ stop }}" style="background:var(--color-background-primary);border-radius:16px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;animation:modalIn .2s ease;box-shadow:0 24px 60px rgba(0,0,0,.3);">
+      <div onClick="{{ stop }}" style="{{ modalBoxStyle }}">
         <div class="app-modal-header" style="display:flex;align-items:center;justify-content:space-between;padding:22px 26px;border-bottom:1px solid var(--color-border-tertiary);position:sticky;top:0;background:var(--color-background-primary);border-radius:16px 16px 0 0;">
           <h2 style="margin:0;font-size:18px;font-weight:700;">{{ modalTitle }}</h2>
           <button onClick="{{ closeModal }}" style="background:none;border:none;cursor:pointer;color:var(--color-text-secondary);padding:4px;"><i class="ti ti-x" style="font-size:21px;"></i></button>
@@ -3231,30 +3231,38 @@ POLÍTICAS: trocas em até 7 dias com nota." style="padding:14px 15px;border:1px
           <sc-if value="{{ m_catpicker }}" hint-placeholder-val="{{ false }}">
             <div style="display:flex;flex-direction:column;gap:14px;">
               <input value="{{ catPickerSearch }}" onInput="{{ onCatPickerSearch }}" placeholder="Buscar categoria, subcategoria ou tag..." style="padding:10px 13px;border:1px solid var(--color-border-tertiary);border-radius:9px;background:var(--color-background-primary);">
-              <div style="max-height:48vh;overflow-y:auto;display:flex;flex-direction:column;gap:16px;padding-right:2px;">
+              <div style="max-height:66vh;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding-right:2px;">
                 <sc-for list="{{ catPickerGroups }}" as="cat" hint-placeholder-count="1">
-                  <div>
-                    <div style="font-weight:700;font-size:13.5px;margin-bottom:8px;">{{ cat.nome }}</div>
-                    <sc-for list="{{ cat.subs }}" as="sc" hint-placeholder-count="1">
-                      <div style="margin-bottom:12px;">
-                        <div style="font-size:12px;color:var(--color-text-secondary);font-weight:600;margin-bottom:6px;">{{ sc.nome }}</div>
-                        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:8px;">
-                          <sc-for list="{{ sc.imgs }}" as="img" hint-placeholder-count="0">
-                            <div onClick="{{ img.onToggle }}" style="{{ img.boxStyle }}">
-                              <img src="{{ img.url }}" style="width:100%;height:100%;object-fit:cover;display:block;">
-                              <sc-if value="{{ img.tag }}" hint-placeholder-val="{{ false }}">
-                                <span style="position:absolute;bottom:0;left:0;right:0;background:rgba(10,18,32,.72);color:#fff;font-size:9px;font-weight:600;text-align:center;padding:2px 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ img.tag }}</span>
-                              </sc-if>
-                              <sc-if value="{{ img.selected }}" hint-placeholder-val="{{ false }}">
-                                <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(22,163,74,.4);display:flex;align-items:center;justify-content:center;">
-                                  <div style="width:22px;height:22px;border-radius:50%;background:#16a34a;color:#fff;display:flex;align-items:center;justify-content:center;"><i class="ti ti-check" style="font-size:14px;"></i></div>
+                  <div style="border:1px solid var(--color-border-tertiary);border-radius:11px;overflow:hidden;">
+                    <div onClick="{{ cat.onToggle }}" style="display:flex;align-items:center;gap:9px;padding:11px 14px;cursor:pointer;background:var(--color-background-secondary);">
+                      <i class="ti {{ cat.chevron }}" style="font-size:16px;color:var(--color-text-secondary);flex-shrink:0;"></i>
+                      <div style="flex:1;font-weight:700;font-size:13.5px;min-width:0;">{{ cat.nome }}</div>
+                      <span style="font-size:11px;font-weight:600;color:var(--color-text-secondary);background:var(--color-background-primary);border-radius:999px;padding:3px 9px;flex-shrink:0;">{{ cat.countLabel }}</span>
+                    </div>
+                    <sc-if value="{{ cat.open }}" hint-placeholder-val="{{ true }}">
+                      <div style="padding:14px;display:flex;flex-direction:column;gap:16px;">
+                        <sc-for list="{{ cat.subs }}" as="sc" hint-placeholder-count="1">
+                          <div>
+                            <div style="font-size:12.5px;color:var(--color-text-secondary);font-weight:600;margin-bottom:8px;">{{ sc.nome }}</div>
+                            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;">
+                              <sc-for list="{{ sc.imgs }}" as="img" hint-placeholder-count="0">
+                                <div onClick="{{ img.onToggle }}" style="{{ img.boxStyle }}">
+                                  <img src="{{ img.url }}" style="width:100%;height:100%;object-fit:cover;display:block;">
+                                  <sc-if value="{{ img.tag }}" hint-placeholder-val="{{ false }}">
+                                    <span style="position:absolute;bottom:0;left:0;right:0;background:rgba(10,18,32,.72);color:#fff;font-size:11px;font-weight:600;text-align:center;padding:4px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ img.tag }}</span>
+                                  </sc-if>
+                                  <sc-if value="{{ img.selected }}" hint-placeholder-val="{{ false }}">
+                                    <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(22,163,74,.4);display:flex;align-items:center;justify-content:center;">
+                                      <div style="width:30px;height:30px;border-radius:50%;background:#16a34a;color:#fff;display:flex;align-items:center;justify-content:center;"><i class="ti ti-check" style="font-size:18px;"></i></div>
+                                    </div>
+                                  </sc-if>
                                 </div>
-                              </sc-if>
+                              </sc-for>
                             </div>
-                          </sc-for>
-                        </div>
+                          </div>
+                        </sc-for>
                       </div>
-                    </sc-for>
+                    </sc-if>
                   </div>
                 </sc-for>
                 <sc-if value="{{ catPickerEmpty }}" hint-placeholder-val="{{ false }}"><div style="padding:30px;text-align:center;color:var(--color-text-secondary);font-size:13.5px;">Nenhuma foto encontrada no catálogo.</div></sc-if>
@@ -3489,6 +3497,7 @@ class Component extends DCLogic {
     catalogoTagInput: '',
     catalogoPickerSel: [],
     catalogoPickerSearch: '',
+    catalogoPickerAberto: {},
     convTab: 'pendente',
     convFonte: 'todas',
     activeConv: null,
@@ -4164,6 +4173,9 @@ class Component extends DCLogic {
     });
   }
   onCatalogoPickerSearch = (e) => this.setState({ catalogoPickerSearch: e.target.value });
+  toggleCatalogoPickerCat(id) {
+    this.setState(s => { const cur = (s.catalogoPickerAberto || {})[id] !== false; return { catalogoPickerAberto: Object.assign({}, s.catalogoPickerAberto, { [id]: !cur }) }; });
+  }
   async sendCatalogoPicker() {
     const sel = this.state.catalogoPickerSel || [];
     if (!sel.length) return;
@@ -5126,10 +5138,12 @@ class Component extends DCLogic {
     });
 
     // seletor de fotos do catálogo p/ enviar direto na conversa
+    vm.modalBoxStyle = { background: 'var(--color-background-primary)', borderRadius: '16px', width: '100%', maxWidth: S.modal === 'catalogo_picker' ? '920px' : '560px', maxHeight: '90vh', overflowY: 'auto', animation: 'modalIn .2s ease', boxShadow: '0 24px 60px rgba(0,0,0,.3)' };
     if (S.modal === 'catalogo_picker') {
       const sel = S.catalogoPickerSel || [];
       const isSel = (url) => sel.some(x => x.url === url);
       const t = (S.catalogoPickerSearch || '').toLowerCase();
+      const abertos = S.catalogoPickerAberto || {};
       vm.catPickerSearch = S.catalogoPickerSearch || '';
       vm.onCatPickerSearch = this.onCatalogoPickerSearch;
       const groups = (S.catalogo || []).map(cat => {
@@ -5139,25 +5153,33 @@ class Component extends DCLogic {
         }).filter(x => x.imgs.length > 0);
         return { cat, subs };
       }).filter(x => x.subs.length > 0);
-      vm.catPickerGroups = groups.map(({ cat, subs }) => ({
-        id: cat.id,
-        nome: cat.nome,
-        subs: subs.map(({ sub, imgs }) => ({
-          id: sub.id,
-          nome: sub.nome,
-          imgs: imgs.map((im, i) => {
-            const selected = isSel(im.url);
-            return {
-              url: im.url,
-              tag: im.tag || '',
-              key: sub.id + '_' + i,
-              selected,
-              boxStyle: { position: 'relative', width: '100%', aspectRatio: '1', borderRadius: '8px', overflow: 'hidden', cursor: 'pointer', border: selected ? '3px solid #16a34a' : '1px solid var(--color-border-tertiary)' },
-              onToggle: () => this.toggleCatalogoPickerImg({ url: im.url, tag: im.tag, subNome: sub.nome, catNome: cat.nome }),
-            };
-          }),
-        })),
-      }));
+      vm.catPickerGroups = groups.map(({ cat, subs }) => {
+        const open = abertos[cat.id] !== false;
+        const totalImgs = subs.reduce((a, x) => a + x.imgs.length, 0);
+        return {
+          id: cat.id,
+          nome: cat.nome,
+          open,
+          chevron: open ? 'ti-chevron-down' : 'ti-chevron-right',
+          countLabel: totalImgs + (totalImgs === 1 ? ' foto' : ' fotos'),
+          onToggle: () => this.toggleCatalogoPickerCat(cat.id),
+          subs: subs.map(({ sub, imgs }) => ({
+            id: sub.id,
+            nome: sub.nome,
+            imgs: imgs.map((im, i) => {
+              const selected = isSel(im.url);
+              return {
+                url: im.url,
+                tag: im.tag || '',
+                key: sub.id + '_' + i,
+                selected,
+                boxStyle: { position: 'relative', width: '100%', aspectRatio: '1', borderRadius: '10px', overflow: 'hidden', cursor: 'pointer', border: selected ? '3px solid #16a34a' : '1px solid var(--color-border-tertiary)' },
+                onToggle: () => this.toggleCatalogoPickerImg({ url: im.url, tag: im.tag, subNome: sub.nome, catNome: cat.nome }),
+              };
+            }),
+          })),
+        };
+      });
       vm.catPickerEmpty = groups.length === 0;
       vm.catPickerSelCount = sel.length;
       vm.catPickerSelEmpty = sel.length === 0;
