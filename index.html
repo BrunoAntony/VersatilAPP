@@ -1676,7 +1676,7 @@
 <x-dc>
 <helmet>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.11.0/dist/tabler-icons.min.css">
-<script>window.__VERSATIL_BUILD__ = "1783704975836";</script>
+<script>window.__VERSATIL_BUILD__ = "1783705971274";</script>
 <style>
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;height:100%;}
@@ -2224,6 +2224,23 @@ input:focus,select:focus,textarea:focus{outline:2px solid #3b82f6;outline-offset
       <!-- ===== PRODUTOS / CATÁLOGO (categorias > subcategorias) ===== -->
       <sc-if value="{{ isProdutos }}" hint-placeholder-val="{{ false }}">
         <div style="display:flex;flex-direction:column;gap:16px;">
+          <!-- MENU DE TAGS DE ESTILO -->
+          <div style="background:var(--color-background-primary);border:1px solid var(--color-border-tertiary);border-radius:var(--radius);padding:16px 18px;">
+            <div style="font-size:12px;font-weight:700;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px;">Tags de estilo</div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+              <sc-for list="{{ catalogoTagChips }}" as="tg" hint-placeholder-count="3">
+                <span style="display:inline-flex;align-items:center;gap:6px;background:var(--color-background-secondary);border:1px solid var(--color-border-tertiary);border-radius:999px;padding:5px 6px 5px 12px;font-size:12.5px;font-weight:600;">
+                  {{ tg.nome }}
+                  <button onClick="{{ tg.onRemove }}" style="background:none;border:none;color:var(--color-text-secondary);cursor:pointer;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;padding:0;"><i class="ti ti-x" style="font-size:12px;"></i></button>
+                </span>
+              </sc-for>
+              <div style="display:inline-flex;align-items:center;gap:6px;">
+                <input value="{{ catalogoTagInput }}" onInput="{{ onCatalogoTagInput }}" onKeyDown="{{ onCatalogoTagKey }}" placeholder="Nova tag (ex: Floral)" style="padding:7px 10px;border:1px solid var(--color-border-tertiary);border-radius:8px;background:var(--color-background-secondary);font-size:12.5px;width:160px;">
+                <button onClick="{{ onAddCatalogoTag }}" style="background:#1a2b42;color:#fff;border:none;border-radius:8px;padding:7px 11px;font-size:12.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;"><i class="ti ti-plus" style="font-size:14px;"></i>Adicionar</button>
+              </div>
+            </div>
+            <sc-if value="{{ catalogoTagsEmpty }}" hint-placeholder-val="{{ false }}"><div style="font-size:12.5px;color:var(--color-text-secondary);margin-top:8px;">Nenhuma tag cadastrada ainda. Crie as tags de estilo aqui (ex: Clássico, Floral, Minimalista) e depois selecione-as em cada imagem das subcategorias.</div></sc-if>
+          </div>
           <sc-for list="{{ catalogoCategorias }}" as="cat" hint-placeholder-count="2">
             <div style="background:var(--color-background-primary);border:1px solid var(--color-border-tertiary);border-radius:var(--radius);overflow:hidden;">
               <div onClick="{{ cat.onToggle }}" style="display:flex;align-items:center;gap:10px;padding:16px 18px;cursor:pointer;">
@@ -3057,7 +3074,7 @@ POLÍTICAS: trocas em até 7 dias com nota." style="padding:14px 15px;border:1px
                     <input type="file" accept="image/*" multiple="{{ true }}" onChange="{{ onCatalogoImageChosen }}" style="display:none;">
                   </label>
                 </div>
-                <div style="font-size:12px;color:var(--color-text-secondary);line-height:1.5;margin-bottom:10px;">Dê uma "tag" de estilo pra cada imagem (ex: Clássico, Floral, Minimalista) — assim o agente de IA envia a foto certa quando o cliente pedir um estilo específico. Deixe em branco se a imagem não for de um estilo em particular.</div>
+                <div style="font-size:12px;color:var(--color-text-secondary);line-height:1.5;margin-bottom:10px;">Selecione a tag de estilo de cada imagem (ex: Clássico, Floral, Minimalista) — assim o agente de IA envia a foto certa quando o cliente pedir um estilo específico. Cadastre novas tags no menu "Tags de estilo" no topo da página Produtos.</div>
                 <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px;">
                   <sc-for list="{{ tipoProdutoImagens }}" as="img" hint-placeholder-count="0">
                     <div style="display:flex;flex-direction:column;gap:5px;">
@@ -3065,7 +3082,10 @@ POLÍTICAS: trocas em até 7 dias com nota." style="padding:14px 15px;border:1px
                         <img src="{{ img.url }}" style="width:100%;height:100%;object-fit:cover;display:block;">
                         <button onClick="{{ img.onRemove }}" style="position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;background:rgba(10,18,32,.7);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;"><i class="ti ti-x" style="font-size:13px;"></i></button>
                       </div>
-                      <input value="{{ img.tag }}" onInput="{{ img.onTag }}" placeholder="tag (ex: floral)" style="width:100%;padding:5px 7px;border:1px solid var(--color-border-tertiary);border-radius:6px;background:var(--color-background-primary);font-size:11px;">
+                      <select value="{{ img.tag }}" onChange="{{ img.onTag }}" style="width:100%;padding:5px 4px;border:1px solid var(--color-border-tertiary);border-radius:6px;background:var(--color-background-primary);font-size:11px;">
+                        <option value="">Sem tag</option>
+                        <sc-for list="{{ catalogoTagOptions }}" as="o" hint-placeholder-count="0"><option value="{{ o }}">{{ o }}</option></sc-for>
+                      </select>
                     </div>
                   </sc-for>
                 </div>
@@ -3426,6 +3446,8 @@ class Component extends DCLogic {
     conversas: [],
     catalogo: [],
     catalogoAberto: {},
+    catalogoTags: [],
+    catalogoTagInput: '',
     convTab: 'pendente',
     convFonte: 'todas',
     activeConv: null,
@@ -3585,26 +3607,45 @@ class Component extends DCLogic {
   async loadCatalogo() {
     let saved = null;
     try { saved = JSON.parse(localStorage.getItem('versatil_catalogo') || 'null'); } catch (e) {}
-    if (saved) this.setState({ catalogo: this.normCatalogo(saved) });
+    if (saved) {
+      const cat = Array.isArray(saved) ? saved : (saved.catalogo || []);
+      const tags = Array.isArray(saved) ? [] : (saved.tags || []);
+      this.setState({ catalogo: this.normCatalogo(cat), catalogoTags: tags });
+    }
     try {
       const rows = await this.api('GET', 'app_config', { query: 'id=eq.produtos_catalogo&select=data' });
       const shared = rows && rows[0] && rows[0].data;
       const list = shared && Array.isArray(shared.catalogo) ? this.normCatalogo(shared.catalogo) : null;
-      if (list) this.setState({ catalogo: list }, () => { try { localStorage.setItem('versatil_catalogo', JSON.stringify(list)); } catch (e) {} });
+      const tags = (shared && Array.isArray(shared.tags)) ? shared.tags : [];
+      if (list) this.setState({ catalogo: list, catalogoTags: tags }, () => { try { localStorage.setItem('versatil_catalogo', JSON.stringify({ catalogo: list, tags })); } catch (e) {} });
     } catch (e) { console.warn('[catalogo] não foi possível carregar do Supabase:', e.message || e); }
   }
   persistCatalogo = () => {
-    try { localStorage.setItem('versatil_catalogo', JSON.stringify(this.state.catalogo)); } catch (e) {}
+    try { localStorage.setItem('versatil_catalogo', JSON.stringify({ catalogo: this.state.catalogo, tags: this.state.catalogoTags })); } catch (e) {}
     clearTimeout(this._catSyncT);
-    this._catSyncT = setTimeout(() => this.syncCatalogo(this.state.catalogo), 900);
+    this._catSyncT = setTimeout(() => this.syncCatalogo(this.state.catalogo, this.state.catalogoTags), 900);
   };
-  async syncCatalogo(catalogo) {
-    const payload = { catalogo };
+  async syncCatalogo(catalogo, tags) {
+    const payload = { catalogo, tags: tags || [] };
     try {
       await this.api('POST', 'app_config', { body: { id: 'produtos_catalogo', data: payload, updated_at: new Date().toISOString() }, query: null }).catch(async () => {
         await fetch(this.SUPA_URL + '/rest/v1/app_config?id=eq.produtos_catalogo', { method: 'PATCH', headers: this.headers({ Prefer: 'return=minimal' }), body: JSON.stringify({ data: payload, updated_at: new Date().toISOString() }) });
       });
     } catch (e) { console.warn('[catalogo] falha ao sincronizar:', e.message || e); }
+  }
+  // ---- menu de tags de estilo (lista mestre, selecionável em cada imagem) ----
+  onCatalogoTagInput = (e) => { this.setState({ catalogoTagInput: e.target.value }); };
+  onCatalogoTagKey = (e) => { if (e.key === 'Enter') { e.preventDefault(); this.addCatalogoTag(); } };
+  addCatalogoTag = () => {
+    const t = (this.state.catalogoTagInput || '').trim();
+    if (!t) return;
+    this.setState(s => {
+      if ((s.catalogoTags || []).some(x => x.toLowerCase() === t.toLowerCase())) return { catalogoTagInput: '' };
+      return { catalogoTags: [...(s.catalogoTags || []), t], catalogoTagInput: '' };
+    }, () => this.persistCatalogo());
+  };
+  removeCatalogoTag(nome) {
+    this.setState(s => ({ catalogoTags: (s.catalogoTags || []).filter(x => x !== nome) }), () => this.persistCatalogo());
   }
   toggleCategoria(id) {
     this.setState(s => { const cur = (s.catalogoAberto || {})[id] !== false; return { catalogoAberto: Object.assign({}, s.catalogoAberto, { [id]: !cur }) }; });
@@ -4015,7 +4056,10 @@ class Component extends DCLogic {
           from: from, type: type === 'video' ? 'document' : type,
           text: texto, time: this.wppTs(m.messageTimestamp),
           fileName: m.fileName || (type === 'document' ? 'documento' : ''),
-          url: m.fileURL || m.mediaUrl || m.url || '',
+          // uazapi costuma devolver fileURL vazio no histórico (/message/find) para mídia
+          // enviada por nós — o link real da WhatsApp CDN (content.URL) vem criptografado
+          // e não é exibível direto. Quando fromMe, o que enviamos já volta em sendPayload.file.
+          url: m.fileURL || m.mediaUrl || (m.sendPayload && m.sendPayload.file) || m.url || '',
           duration: m.seconds ? (Math.floor(m.seconds / 60) + ':' + String(m.seconds % 60).padStart(2, '0')) : '',
         };
       });
@@ -5013,6 +5057,7 @@ class Component extends DCLogic {
       formItens: (S.form.itens || []).map((it, idx) => ({ idx, produto: it.produto, quantidade: it.quantidade, preco: it.preco, subtotalFmt: this.fmtMoney(this.num(it.quantidade) * this.num(it.preco)) })),
       formTotalFmt: this.fmtMoney((S.form.itens || []).reduce((a, it) => a + this.num(it.quantidade) * this.num(it.preco), 0)),
       tipoProdutoImagens: (S.form.imagens || []).map((im, idx) => ({ url: (im && im.url) || '', tag: (im && im.tag) || '', idx, onRemove: () => this.removeCatalogoImage(idx), onTag: (e) => this.setCatalogoImageTag(idx, e.target.value) })),
+      catalogoTagOptions: S.catalogoTags || [],
       tipoProdutoHasImagens: (S.form.imagens || []).length > 0,
       onCatalogoImageChosen: this.onCatalogoImageChosen,
     });
@@ -5225,6 +5270,12 @@ class Component extends DCLogic {
     // ===== PRODUTOS (CATÁLOGO: categorias > subcategorias) =====
     vm.isProdutos = tab === 'produtos';
     if (vm.isProdutos) {
+      vm.catalogoTagInput = S.catalogoTagInput || '';
+      vm.onCatalogoTagInput = this.onCatalogoTagInput;
+      vm.onCatalogoTagKey = this.onCatalogoTagKey;
+      vm.onAddCatalogoTag = this.addCatalogoTag;
+      vm.catalogoTagChips = (S.catalogoTags || []).map(nome => ({ nome, onRemove: () => this.removeCatalogoTag(nome) }));
+      vm.catalogoTagsEmpty = (S.catalogoTags || []).length === 0;
       const t = (S.search.produtos || '').toLowerCase();
       const abertos = S.catalogoAberto || {};
       const catMatch = c => (c.nome || '').toLowerCase().includes(t);
