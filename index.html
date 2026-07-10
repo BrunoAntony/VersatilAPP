@@ -1676,7 +1676,7 @@
 <x-dc>
 <helmet>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.11.0/dist/tabler-icons.min.css">
-<script>window.__VERSATIL_BUILD__ = "1783690159602";</script>
+<script>window.__VERSATIL_BUILD__ = "1783690920662";</script>
 <style>
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;height:100%;}
@@ -2216,32 +2216,51 @@ input:focus,select:focus,textarea:focus{outline:2px solid #3b82f6;outline-offset
         <sc-if value="{{ fornecedoresEmpty }}" hint-placeholder-val="{{ false }}"><div style="padding:48px;text-align:center;color:var(--color-text-secondary);font-size:14px;background:var(--color-background-primary);border:1px solid var(--color-border-tertiary);border-radius:var(--radius);">Nenhum fornecedor encontrado.</div></sc-if>
       </sc-if>
 
-      <!-- ===== PRODUTOS / CATÁLOGO ===== -->
+      <!-- ===== PRODUTOS / CATÁLOGO (categorias > subcategorias) ===== -->
       <sc-if value="{{ isProdutos }}" hint-placeholder-val="{{ false }}">
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px;">
-          <sc-for list="{{ catalogoCards }}" as="c" hint-placeholder-count="4">
-            <div style="background:var(--color-background-primary);border:1px solid var(--color-border-tertiary);border-radius:var(--radius);padding:20px;display:flex;flex-direction:column;gap:12px;">
-              <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
-                <div style="font-weight:700;font-size:15.5px;">{{ c.nome }}</div>
-                <div style="display:flex;gap:4px;flex-shrink:0;">
-                  <button onClick="{{ c.onEdit }}" style="background:none;border:none;color:var(--color-text-secondary);cursor:pointer;padding:4px;"><i class="ti ti-pencil" style="font-size:16px;"></i></button>
-                  <button onClick="{{ c.onDelete }}" style="background:none;border:none;color:var(--color-text-danger);cursor:pointer;padding:4px;"><i class="ti ti-trash" style="font-size:16px;"></i></button>
-                </div>
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          <sc-for list="{{ catalogoCategorias }}" as="cat" hint-placeholder-count="2">
+            <div style="background:var(--color-background-primary);border:1px solid var(--color-border-tertiary);border-radius:var(--radius);overflow:hidden;">
+              <div onClick="{{ cat.onToggle }}" style="display:flex;align-items:center;gap:10px;padding:16px 18px;cursor:pointer;">
+                <i class="ti {{ cat.chevron }}" style="font-size:17px;color:var(--color-text-secondary);flex-shrink:0;"></i>
+                <div style="flex:1;font-weight:700;font-size:15.5px;min-width:0;">{{ cat.nome }}</div>
+                <span style="font-size:11.5px;font-weight:600;color:var(--color-text-secondary);background:var(--color-background-secondary);border-radius:999px;padding:3px 10px;flex-shrink:0;">{{ cat.subcount }}</span>
+                <button onClick="{{ cat.onAddSub }}" style="background:var(--color-background-info);color:var(--color-text-info);border:none;border-radius:8px;padding:7px 12px;font-size:12.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px;flex-shrink:0;white-space:nowrap;"><i class="ti ti-plus" style="font-size:14px;"></i>Subcategoria</button>
+                <button onClick="{{ cat.onEdit }}" style="background:none;border:none;color:var(--color-text-secondary);cursor:pointer;padding:4px;flex-shrink:0;"><i class="ti ti-pencil" style="font-size:16px;"></i></button>
+                <button onClick="{{ cat.onDelete }}" style="background:none;border:none;color:var(--color-text-danger);cursor:pointer;padding:4px;flex-shrink:0;"><i class="ti ti-trash" style="font-size:16px;"></i></button>
               </div>
-              <div style="font-size:13px;color:var(--color-text-secondary);line-height:1.5;">{{ c.descricao }}</div>
-              <sc-if value="{{ c.hasImagens }}" hint-placeholder-val="{{ false }}">
-                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:8px;">
-                  <sc-for list="{{ c.imagensList }}" as="img" hint-placeholder-count="0">
-                    <div style="width:100%;aspect-ratio:1;border-radius:8px;overflow:hidden;border:1px solid var(--color-border-tertiary);">
-                      <img src="{{ img.url }}" style="width:100%;height:100%;object-fit:cover;display:block;">
-                    </div>
-                  </sc-for>
+              <sc-if value="{{ cat.open }}" hint-placeholder-val="{{ true }}">
+                <div style="padding:0 18px 18px;border-top:1px solid var(--color-border-tertiary);">
+                  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-top:16px;">
+                    <sc-for list="{{ cat.subs }}" as="sc" hint-placeholder-count="2">
+                      <div style="background:var(--color-background-secondary);border:1px solid var(--color-border-tertiary);border-radius:11px;padding:16px;display:flex;flex-direction:column;gap:10px;">
+                        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
+                          <div style="font-weight:600;font-size:14px;">{{ sc.nome }}</div>
+                          <div style="display:flex;gap:2px;flex-shrink:0;">
+                            <button onClick="{{ sc.onEdit }}" style="background:none;border:none;color:var(--color-text-secondary);cursor:pointer;padding:3px;"><i class="ti ti-pencil" style="font-size:14px;"></i></button>
+                            <button onClick="{{ sc.onDelete }}" style="background:none;border:none;color:var(--color-text-danger);cursor:pointer;padding:3px;"><i class="ti ti-trash" style="font-size:14px;"></i></button>
+                          </div>
+                        </div>
+                        <div style="font-size:12.5px;color:var(--color-text-secondary);line-height:1.5;">{{ sc.descricao }}</div>
+                        <sc-if value="{{ sc.hasImagens }}" hint-placeholder-val="{{ false }}">
+                          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(56px,1fr));gap:6px;">
+                            <sc-for list="{{ sc.imagensList }}" as="img" hint-placeholder-count="0">
+                              <div style="width:100%;aspect-ratio:1;border-radius:7px;overflow:hidden;border:1px solid var(--color-border-tertiary);">
+                                <img src="{{ img.url }}" style="width:100%;height:100%;object-fit:cover;display:block;">
+                              </div>
+                            </sc-for>
+                          </div>
+                        </sc-if>
+                      </div>
+                    </sc-for>
+                  </div>
+                  <sc-if value="{{ cat.subsEmpty }}" hint-placeholder-val="{{ false }}"><div style="padding:16px 0 4px;text-align:center;color:var(--color-text-secondary);font-size:13px;">Nenhuma subcategoria ainda. Clique em "Subcategoria" para adicionar.</div></sc-if>
                 </div>
               </sc-if>
             </div>
           </sc-for>
         </div>
-        <sc-if value="{{ catalogoEmpty }}" hint-placeholder-val="{{ false }}"><div style="padding:48px;text-align:center;color:var(--color-text-secondary);font-size:14px;background:var(--color-background-primary);border:1px solid var(--color-border-tertiary);border-radius:var(--radius);">Nenhum tipo de produto cadastrado ainda. Clique em "+ Novo Tipo" para começar seu catálogo.</div></sc-if>
+        <sc-if value="{{ catalogoEmpty }}" hint-placeholder-val="{{ false }}"><div style="padding:48px;text-align:center;color:var(--color-text-secondary);font-size:14px;background:var(--color-background-primary);border:1px solid var(--color-border-tertiary);border-radius:var(--radius);">Nenhuma categoria cadastrada ainda. Clique em "+ Nova Categoria" para começar seu catálogo.</div></sc-if>
       </sc-if>
 
       <!-- ===== ATENDIMENTO ===== -->
@@ -2992,11 +3011,21 @@ POLÍTICAS: trocas em até 7 dias com nota." style="padding:14px 15px;border:1px
             </div>
           </sc-if>
 
-          <!-- TIPO DE PRODUTO (CATÁLOGO) -->
-          <sc-if value="{{ m_tipoProduto }}" hint-placeholder-val="{{ false }}">
+          <!-- NOVA/EDITAR CATEGORIA (CATÁLOGO) -->
+          <sc-if value="{{ m_categoria }}" hint-placeholder-val="{{ false }}">
             <div style="display:flex;flex-direction:column;gap:16px;">
-              <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:var(--color-text-secondary);">Nome do tipo de produto
-                <input name="nome" value="{{ form.nome }}" onInput="{{ onFormChange }}" placeholder="ex: Convites de casamento" style="padding:11px 13px;border:1px solid var(--color-border-tertiary);border-radius:9px;background:var(--color-background-primary);">
+              <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:var(--color-text-secondary);">Nome da categoria
+                <input name="nome" value="{{ form.nome }}" onInput="{{ onFormChange }}" placeholder="ex: Convites" style="padding:11px 13px;border:1px solid var(--color-border-tertiary);border-radius:9px;background:var(--color-background-primary);">
+              </label>
+              <div style="font-size:12.5px;color:var(--color-text-secondary);line-height:1.5;">Depois de criar a categoria, adicione subcategorias dentro dela (ex: Casamento, 15 anos, Bodas) — cada subcategoria tem sua própria descrição e imagens de modelos.</div>
+            </div>
+          </sc-if>
+
+          <!-- SUBCATEGORIA (CATÁLOGO) -->
+          <sc-if value="{{ m_subcategoria }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:16px;">
+              <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:var(--color-text-secondary);">Nome da subcategoria
+                <input name="nome" value="{{ form.nome }}" onInput="{{ onFormChange }}" placeholder="ex: Casamento" style="padding:11px 13px;border:1px solid var(--color-border-tertiary);border-radius:9px;background:var(--color-background-primary);">
               </label>
               <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:var(--color-text-secondary);">Breve descrição
                 <textarea name="descricao" value="{{ form.descricao }}" onInput="{{ onFormChange }}" rows="3" placeholder="Descreva brevemente o que são esses produtos" style="padding:11px 13px;border:1px solid var(--color-border-tertiary);border-radius:9px;background:var(--color-background-primary);font-family:inherit;resize:vertical;"></textarea>
@@ -3352,6 +3381,7 @@ class Component extends DCLogic {
     openGroups: { principal: true, comercial: true, cadastros: true, atendimento: true },
     conversas: [],
     catalogo: [],
+    catalogoAberto: {},
     convTab: 'pendente',
     convFonte: 'todas',
     activeConv: null,
@@ -3486,14 +3516,22 @@ class Component extends DCLogic {
   // ---------- catálogo de produtos (tipos) ----------
   // Guardado à parte (linha própria em app_config) para não engordar/atrasar
   // a sincronização de agentes/canais/agendamentos com as imagens (dataURL).
+  // catalogo = [{ id, nome, subcategorias: [{ id, nome, descricao, imagens }] }]
+  normCatalogo(list) {
+    return (list || []).map(c => {
+      if (Array.isArray(c.subcategorias)) return c;
+      // migra formato antigo (tipo de produto plano, sem categoria) para uma categoria com 1 subcategoria
+      return { id: c.id, nome: c.nome, subcategorias: [{ id: c.id + '_sub', nome: c.nome, descricao: c.descricao || '', imagens: c.imagens || [] }] };
+    });
+  }
   async loadCatalogo() {
     let saved = null;
     try { saved = JSON.parse(localStorage.getItem('versatil_catalogo') || 'null'); } catch (e) {}
-    if (saved) this.setState({ catalogo: saved });
+    if (saved) this.setState({ catalogo: this.normCatalogo(saved) });
     try {
       const rows = await this.api('GET', 'app_config', { query: 'id=eq.produtos_catalogo&select=data' });
       const shared = rows && rows[0] && rows[0].data;
-      const list = shared && Array.isArray(shared.catalogo) ? shared.catalogo : null;
+      const list = shared && Array.isArray(shared.catalogo) ? this.normCatalogo(shared.catalogo) : null;
       if (list) this.setState({ catalogo: list }, () => { try { localStorage.setItem('versatil_catalogo', JSON.stringify(list)); } catch (e) {} });
     } catch (e) { console.warn('[catalogo] não foi possível carregar do Supabase:', e.message || e); }
   }
@@ -3510,8 +3548,29 @@ class Component extends DCLogic {
       });
     } catch (e) { console.warn('[catalogo] falha ao sincronizar:', e.message || e); }
   }
-  openTipoProdutoModal(item) {
-    this.setState({ modal: 'tipo_produto', form: { _id: item ? item.id : null, nome: item ? item.nome : '', descricao: item ? item.descricao : '', imagens: item ? (item.imagens || []).slice() : [] } });
+  toggleCategoria(id) {
+    this.setState(s => { const cur = (s.catalogoAberto || {})[id] !== false; return { catalogoAberto: Object.assign({}, s.catalogoAberto, { [id]: !cur }) }; });
+  }
+  openCategoriaModal(item) {
+    this.setState({ modal: 'nova_categoria', form: { _id: item ? item.id : null, nome: item ? item.nome : '' } });
+  }
+  saveCategoria() {
+    const f = this.state.form;
+    const nome = (f.nome || '').trim();
+    if (!nome) return this.toast('error', 'Informe o nome da categoria');
+    const isEdit = !!f._id;
+    this.setState(s => {
+      const catalogo = isEdit
+        ? s.catalogo.map(c => c.id === f._id ? Object.assign({}, c, { nome }) : c)
+        : [{ id: this.genId(), nome, subcategorias: [] }, ...s.catalogo];
+      return { catalogo, modal: null, form: {} };
+    }, () => { this.persistCatalogo(); this.toast('success', isEdit ? 'Categoria atualizada' : 'Categoria criada'); });
+  }
+  deleteCategoria(id) {
+    this.setState(s => ({ catalogo: s.catalogo.filter(c => c.id !== id) }), () => { this.persistCatalogo(); this.toast('info', 'Categoria removida'); });
+  }
+  openSubcategoriaModal(catId, item) {
+    this.setState({ modal: 'subcategoria', form: { _catId: catId, _id: item ? item.id : null, nome: item ? item.nome : '', descricao: item ? item.descricao : '', imagens: item ? (item.imagens || []).slice() : [] } });
   }
   onCatalogoImageChosen = (e) => {
     const files = Array.from(e.target.files || []);
@@ -3528,19 +3587,24 @@ class Component extends DCLogic {
   removeCatalogoImage(idx) {
     this.setState(s => ({ form: Object.assign({}, s.form, { imagens: (s.form.imagens || []).filter((_, i) => i !== idx) }) }));
   }
-  saveTipoProduto() {
+  saveSubcategoria() {
     const f = this.state.form;
     const nome = (f.nome || '').trim();
-    if (!nome) return this.toast('error', 'Informe o nome do tipo de produto');
+    if (!f._catId) return this.toast('error', 'Categoria não encontrada');
+    if (!nome) return this.toast('error', 'Informe o nome da subcategoria');
     const isEdit = !!f._id;
     this.setState(s => {
-      const item = { id: isEdit ? f._id : this.genId(), nome, descricao: (f.descricao || '').trim(), imagens: f.imagens || [] };
-      const catalogo = isEdit ? s.catalogo.map(c => c.id === f._id ? item : c) : [item, ...s.catalogo];
+      const sub = { id: isEdit ? f._id : this.genId(), nome, descricao: (f.descricao || '').trim(), imagens: f.imagens || [] };
+      const catalogo = s.catalogo.map(c => {
+        if (c.id !== f._catId) return c;
+        const subcategorias = isEdit ? (c.subcategorias || []).map(x => x.id === f._id ? sub : x) : [sub, ...(c.subcategorias || [])];
+        return Object.assign({}, c, { subcategorias });
+      });
       return { catalogo, modal: null, form: {} };
-    }, () => { this.persistCatalogo(); this.toast('success', isEdit ? 'Tipo de produto atualizado' : 'Tipo de produto cadastrado'); });
+    }, () => { this.persistCatalogo(); this.toast('success', isEdit ? 'Subcategoria atualizada' : 'Subcategoria cadastrada'); });
   }
-  deleteTipoProduto(id) {
-    this.setState(s => ({ catalogo: s.catalogo.filter(c => c.id !== id) }), () => { this.persistCatalogo(); this.toast('info', 'Tipo de produto removido'); });
+  deleteSubcategoria(catId, subId) {
+    this.setState(s => ({ catalogo: s.catalogo.map(c => c.id !== catId ? c : Object.assign({}, c, { subcategorias: (c.subcategorias || []).filter(x => x.id !== subId) })) }), () => { this.persistCatalogo(); this.toast('info', 'Subcategoria removida'); });
   }
   // ---- agendamentos ----
   addAgendamento(ag) {
@@ -4611,13 +4675,13 @@ class Component extends DCLogic {
       novo_produto: { nome: '', categoria: '', preco: '', quantidade: '', minimo: '' },
       novo_cliente: { nome: '', email: '', telefone: '', cidade: '', documento: '' },
       novo_fornecedor: { razaosocial: '', nomefantasia: '', cnpj: '', categoria: '', email: '', telefone: '', cidade: '', estado: '', prazoentrega: '', condicaopagamento: '' },
-      tipo_produto: { _id: null, nome: '', descricao: '', imagens: [] },
+      nova_categoria: { _id: null, nome: '' },
     };
     this.setState({ modal: type, form: Object.assign({}, defs[type]) });
   }
   closeModal() { this.setState({ modal: null, form: {} }); }
   openAdd() {
-    const map = { vendas: 'nova_venda', compras: 'nova_compra', despesas: 'nova_despesa', estoque: 'novo_produto', clientes: 'novo_cliente', fornecedores: 'novo_fornecedor', produtos: 'tipo_produto' };
+    const map = { vendas: 'nova_venda', compras: 'nova_compra', despesas: 'nova_despesa', estoque: 'novo_produto', clientes: 'novo_cliente', fornecedores: 'novo_fornecedor', produtos: 'nova_categoria' };
     if (map[this.state.tab]) this.openModal(map[this.state.tab]);
   }
   onFormChange = (e) => { const n = e.target.name, v = e.target.value; this.setState(s => ({ form: Object.assign({}, s.form, { [n]: v }) })); };
@@ -4666,7 +4730,8 @@ class Component extends DCLogic {
     if (m === 'novo_agendamento') return this.saveNovoAgendamento();
     if (m === 'gcal_config') return this.saveGcalConfig();
     if (m === 'config_canal') return this.saveCanal();
-    if (m === 'tipo_produto') return this.saveTipoProduto();
+    if (m === 'nova_categoria') return this.saveCategoria();
+    if (m === 'subcategoria') return this.saveSubcategoria();
     if (m === 'nova_venda') {
       if (!f.cliente || !f.valor) return this.toast('error', 'Informe cliente e valor');
       this.create('vendas', { id: this.genId(), cliente: f.cliente, produto: f.produto || '', valor: this.num(f.valor), data: f.data || this.today(), status: f.status || 'Pendente' }, 'vendas', 'Venda registrada');
@@ -4802,7 +4867,7 @@ class Component extends DCLogic {
       agendamentos: ['Agendamentos', 'Horários marcados pelos agentes de IA'],
       agentes: ['Agentes IA', 'Automação inteligente do atendimento'],
     };
-    const addLabels = { vendas: 'Nova Venda', compras: 'Nova Ordem', despesas: 'Nova Despesa', estoque: 'Novo Produto', clientes: 'Novo Cliente', fornecedores: 'Novo Fornecedor', produtos: 'Novo Tipo' };
+    const addLabels = { vendas: 'Nova Venda', compras: 'Nova Ordem', despesas: 'Nova Despesa', estoque: 'Novo Produto', clientes: 'Novo Cliente', fornecedores: 'Novo Fornecedor', produtos: 'Nova Categoria' };
 
     // toasts
     const toasts = S.toasts.map(t => ({
@@ -4826,8 +4891,8 @@ class Component extends DCLogic {
       showAdd: ['vendas', 'compras', 'despesas', 'estoque', 'clientes', 'fornecedores', 'produtos'].includes(tab) && !S.viewCompra, addLabel: addLabels[tab] || '', openAdd: () => this.openAdd(),
       stop: (e) => e.stopPropagation(),
       // modal
-      showModal: !!S.modal, modalTitle: { nova_venda: 'Nova Venda', nova_compra: 'Nova Ordem de Compra', nova_despesa: 'Nova Despesa', novo_produto: 'Novo Produto', novo_cliente: 'Novo Cliente', novo_fornecedor: 'Novo Fornecedor', tipo_produto: (S.form && S.form._id) ? 'Editar Tipo de Produto' : 'Novo Tipo de Produto', config_agente: S.form && S.form.id ? 'Configurar Agente' : 'Novo Agente', config_canal: S.form && S.form._new ? 'Adicionar Canal' : 'Configurar Canal', conectar_wpp: 'Conectar WhatsApp', nova_conversa: 'Nova Conversa', renomear_conv: 'Renomear Contato', add_cliente_conv: 'Adicionar aos Clientes', excluir_conv: 'Excluir Conversa', novo_agendamento: 'Novo Agendamento', gcal_config: 'Sincronizar Google Agenda' }[S.modal] || '',
-      m_venda: S.modal === 'nova_venda', m_compra: S.modal === 'nova_compra', m_despesa: S.modal === 'nova_despesa', m_produto: S.modal === 'novo_produto', m_cliente: S.modal === 'novo_cliente', m_fornecedor: S.modal === 'novo_fornecedor', m_tipoProduto: S.modal === 'tipo_produto',
+      showModal: !!S.modal, modalTitle: { nova_venda: 'Nova Venda', nova_compra: 'Nova Ordem de Compra', nova_despesa: 'Nova Despesa', novo_produto: 'Novo Produto', novo_cliente: 'Novo Cliente', novo_fornecedor: 'Novo Fornecedor', nova_categoria: (S.form && S.form._id) ? 'Editar Categoria' : 'Nova Categoria', subcategoria: (S.form && S.form._id) ? 'Editar Subcategoria' : 'Nova Subcategoria', config_agente: S.form && S.form.id ? 'Configurar Agente' : 'Novo Agente', config_canal: S.form && S.form._new ? 'Adicionar Canal' : 'Configurar Canal', conectar_wpp: 'Conectar WhatsApp', nova_conversa: 'Nova Conversa', renomear_conv: 'Renomear Contato', add_cliente_conv: 'Adicionar aos Clientes', excluir_conv: 'Excluir Conversa', novo_agendamento: 'Novo Agendamento', gcal_config: 'Sincronizar Google Agenda' }[S.modal] || '',
+      m_venda: S.modal === 'nova_venda', m_compra: S.modal === 'nova_compra', m_despesa: S.modal === 'nova_despesa', m_produto: S.modal === 'novo_produto', m_cliente: S.modal === 'novo_cliente', m_fornecedor: S.modal === 'novo_fornecedor', m_categoria: S.modal === 'nova_categoria', m_subcategoria: S.modal === 'subcategoria',
       m_agente: S.modal === 'config_agente', m_canal: S.modal === 'config_canal', m_wpp: S.modal === 'conectar_wpp', m_novaconv: S.modal === 'nova_conversa',
       m_renomear: S.modal === 'renomear_conv', m_addcli: S.modal === 'add_cliente_conv', m_excluirconv: S.modal === 'excluir_conv', m_agendamento: S.modal === 'novo_agendamento', m_gcal: S.modal === 'gcal_config',
       onDoExcluirConv: () => this.doExcluirConv(),
@@ -5074,22 +5139,41 @@ class Component extends DCLogic {
       vm.fornecedoresEmpty = rows.length === 0;
     }
 
-    // ===== PRODUTOS (CATÁLOGO) =====
+    // ===== PRODUTOS (CATÁLOGO: categorias > subcategorias) =====
     vm.isProdutos = tab === 'produtos';
     if (vm.isProdutos) {
       const t = (S.search.produtos || '').toLowerCase();
-      const rows = (S.catalogo || []).filter(c => !t || (c.nome || '').toLowerCase().includes(t) || (c.descricao || '').toLowerCase().includes(t));
-      vm.catalogoCards = rows.map(c => ({
-        id: c.id,
-        nome: c.nome,
-        descricao: c.descricao || 'Sem descrição cadastrada.',
-        imagensList: (c.imagens || []).map((url, i) => ({ url, key: c.id + '_' + i })),
-        hasImagens: (c.imagens || []).length > 0,
-        imagensCount: (c.imagens || []).length,
-        onEdit: () => this.openTipoProdutoModal(c),
-        onDelete: () => this.deleteTipoProduto(c.id),
-      }));
-      vm.catalogoEmpty = rows.length === 0;
+      const abertos = S.catalogoAberto || {};
+      const catMatch = c => (c.nome || '').toLowerCase().includes(t);
+      const subMatch = sc => (sc.nome || '').toLowerCase().includes(t) || (sc.descricao || '').toLowerCase().includes(t);
+      const filtradas = (S.catalogo || [])
+        .map(c => ({ cat: c, subs: (c.subcategorias || []).filter(sc => !t || subMatch(sc) || catMatch(c)) }))
+        .filter(({ cat, subs }) => !t || catMatch(cat) || subs.length > 0);
+      vm.catalogoCategorias = filtradas.map(({ cat, subs }) => {
+        const open = abertos[cat.id] !== false;
+        return {
+          id: cat.id,
+          nome: cat.nome,
+          open,
+          chevron: open ? 'ti-chevron-down' : 'ti-chevron-right',
+          subcount: subs.length,
+          onToggle: () => this.toggleCategoria(cat.id),
+          onEdit: () => this.openCategoriaModal(cat),
+          onDelete: () => this.deleteCategoria(cat.id),
+          onAddSub: (e) => { if (e) e.stopPropagation(); this.openSubcategoriaModal(cat.id, null); },
+          subsEmpty: subs.length === 0,
+          subs: subs.map(sc => ({
+            id: sc.id,
+            nome: sc.nome,
+            descricao: sc.descricao || 'Sem descrição cadastrada.',
+            imagensList: (sc.imagens || []).map((url, i) => ({ url, key: sc.id + '_' + i })),
+            hasImagens: (sc.imagens || []).length > 0,
+            onEdit: () => this.openSubcategoriaModal(cat.id, sc),
+            onDelete: () => this.deleteSubcategoria(cat.id, sc.id),
+          })),
+        };
+      });
+      vm.catalogoEmpty = filtradas.length === 0;
     }
 
     // ===== ATENDIMENTO =====
