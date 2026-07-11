@@ -1676,7 +1676,7 @@
 <x-dc>
 <helmet>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.11.0/dist/tabler-icons.min.css">
-<script>window.__VERSATIL_BUILD__ = "1783716418266";</script>
+<script>window.__VERSATIL_BUILD__ = "1783732040255";</script>
 <style>
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;height:100%;}
@@ -3765,8 +3765,13 @@ class Component extends DCLogic {
       { id: 'ch_mail', nome: 'E-mail', tipo: 'E-mail', icon: 'ti-mail', cor: '#6b7280', status: 'conectado', detalhe: 'atendimento@versatil.com.br' },
     ];
     const savedWpp = saved && saved.canais && saved.canais.find(c => c.tipo === 'WhatsApp' && c.status === 'conectado');
+    // conversas agora vêm do Supabase (tabela "conversas", uma linha por telefone) — persiste entre
+    // dispositivos/navegadores. Se ainda não tem nada lá (primeira vez), usa o que tinha no localStorage.
+    let conversasSupabase = null;
+    try { conversasSupabase = await this.loadConversasFromSupabase(); } catch (e) { console.warn('[conversas] falha ao carregar do Supabase:', e.message || e); }
+    const baseConversas = (conversasSupabase && conversasSupabase.length) ? conversasSupabase : ((saved && saved.conversas) || []);
     // remove conversas de demonstração salvas anteriormente
-    const savedConversas = (saved && saved.conversas || []).filter(c => DEMO_IDS.indexOf(c.id) < 0 && c.nome !== 'Bruno Antony' && c.nome !== 'Vitor Gus' && c.nome !== 'Salão Maria Flor');
+    const savedConversas = baseConversas.filter(c => DEMO_IDS.indexOf(c.id) < 0 && c.nome !== 'Bruno Antony' && c.nome !== 'Vitor Gus' && c.nome !== 'Salão Maria Flor');
     this.setState({
       agentes: ((saved && saved.agentes) || defAgentes).map(a => { a = Object.assign({}, a); a.gemini = Object.assign({ apiKey: '', model: 'gemini-flash-latest' }, a.gemini || {}); if (/gemini-(1\.5|2\.0)/.test(a.gemini.model || '')) a.gemini.model = 'gemini-flash-latest'; if (/gemini-1\.5/.test(a.forcarModelo || '')) a.forcarModelo = ''; return a; }),
       conversas: savedConversas,
@@ -3782,11 +3787,32 @@ class Component extends DCLogic {
   persistCA = () => {
     const snapshot = { conversas: this.state.conversas, agentes: this.state.agentes, canais: this.state.canais, agendamentos: this.state.agendamentos, gcalUrl: this.state.gcalUrl, gcalSecret: this.state.gcalSecret, driveApiKey: this.state.driveApiKey };
     try { localStorage.setItem('versatil_ca', JSON.stringify(snapshot)); } catch (e) {}
-    // sincroniza com o Supabase (compartilhado entre navegadores/dispositivos) — SEM as conversas (fonte real: WhatsApp)
+    // sincroniza com o Supabase — config compartilhada (agentes/canais/agendamentos) e as
+    // conversas (cada uma na sua própria linha, tabela "conversas", chave = telefone)
     const shared = { agentes: snapshot.agentes, canais: snapshot.canais, agendamentos: snapshot.agendamentos, gcalUrl: snapshot.gcalUrl, gcalSecret: snapshot.gcalSecret, driveApiKey: snapshot.driveApiKey };
     clearTimeout(this._caSyncT);
-    this._caSyncT = setTimeout(() => this.syncSharedConfig(shared), 900);
+    this._caSyncT = setTimeout(() => { this.syncSharedConfig(shared); this.syncConversas(); }, 900);
   };
+  async loadConversasFromSupabase() {
+    const rows = await this.api('GET', 'conversas', { query: 'select=dados' });
+    return (rows || []).map(r => r.dados).filter(Boolean);
+  }
+  async syncConversas() {
+    const list = this.state.conversas || [];
+    const rows = list.map(c => {
+      const telefone = this.convPhone(c);
+      if (!telefone) return null;
+      return { telefone, nome: c.nome || '', canal: c.canal || c.source || '', dados: c, updated_at: new Date().toISOString() };
+    }).filter(Boolean);
+    if (!rows.length) return;
+    try {
+      await fetch(this.SUPA_URL + '/rest/v1/conversas', {
+        method: 'POST',
+        headers: this.headers({ Prefer: 'resolution=merge-duplicates,return=minimal' }),
+        body: JSON.stringify(rows),
+      });
+    } catch (e) { console.warn('[conversas] falha ao sincronizar:', e.message || e); }
+  }
   async syncSharedConfig(snapshot) {
     try {
       await this.api('POST', 'app_config', { body: { id: 'shared', data: snapshot, updated_at: new Date().toISOString() }, query: null }).catch(async () => {
