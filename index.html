@@ -1676,7 +1676,7 @@
 <x-dc>
 <helmet>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.11.0/dist/tabler-icons.min.css">
-<script>window.__VERSATIL_BUILD__ = "1783879605585";</script>
+<script>window.__VERSATIL_BUILD__ = "1783884253157";</script>
 <style>
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;height:100%;}
@@ -3809,6 +3809,20 @@ class Component extends DCLogic {
     const rows = await this.api('GET', 'conversas', { query: 'select=dados' });
     return (rows || []).map(r => r.dados).filter(Boolean);
   }
+  // tenta salvar no Supabase até 3x (com espera crescente); se mesmo assim falhar, avisa
+  // visivelmente — antes disso, uma falha de rede pontual ficava só no console, dando falsa
+  // impressão de "salvo" enquanto a alteração nunca chegava a outros dispositivos.
+  async syncWithRetry(fn, label) {
+    for (let tentativa = 0; tentativa < 3; tentativa++) {
+      try { await fn(); return true; }
+      catch (e) {
+        console.warn('[' + label + '] falha ao sincronizar (tentativa ' + (tentativa + 1) + '/3):', e.message || e);
+        if (tentativa < 2) await new Promise(r => setTimeout(r, 800 * (tentativa + 1)));
+      }
+    }
+    this.toast('error', 'Falha ao salvar ' + label + ' no servidor — a alteração pode não aparecer em outros dispositivos. Verifique sua conexão e tente de novo.');
+    return false;
+  }
   async syncConversas() {
     const list = this.state.conversas || [];
     const rows = list.map(c => {
@@ -3817,21 +3831,23 @@ class Component extends DCLogic {
       return { telefone, nome: c.nome || '', canal: c.canal || c.source || '', dados: c, updated_at: new Date().toISOString() };
     }).filter(Boolean);
     if (!rows.length) return;
-    try {
-      await fetch(this.SUPA_URL + '/rest/v1/conversas', {
+    await this.syncWithRetry(async () => {
+      const r = await fetch(this.SUPA_URL + '/rest/v1/conversas', {
         method: 'POST',
         headers: this.headers({ Prefer: 'resolution=merge-duplicates,return=minimal' }),
         body: JSON.stringify(rows),
       });
-    } catch (e) { console.warn('[conversas] falha ao sincronizar:', e.message || e); }
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+    }, 'conversas');
   }
   async syncSharedConfig(snapshot) {
-    try {
+    await this.syncWithRetry(async () => {
       await this.api('POST', 'app_config', { body: { id: 'shared', data: snapshot, updated_at: new Date().toISOString() }, query: null }).catch(async () => {
         // se já existir a linha, o POST falha por PK duplicada — tenta PATCH
-        await fetch(this.SUPA_URL + '/rest/v1/app_config?id=eq.shared', { method: 'PATCH', headers: this.headers({ Prefer: 'return=minimal' }), body: JSON.stringify({ data: snapshot, updated_at: new Date().toISOString() }) });
+        const r = await fetch(this.SUPA_URL + '/rest/v1/app_config?id=eq.shared', { method: 'PATCH', headers: this.headers({ Prefer: 'return=minimal' }), body: JSON.stringify({ data: snapshot, updated_at: new Date().toISOString() }) });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
       });
-    } catch (e) { console.warn('[app_config] falha ao sincronizar:', e.message || e); }
+    }, 'configuração (agentes/canais/agendamentos)');
   }
   // ---------- catálogo de produtos (tipos) ----------
   // Guardado à parte (linha própria em app_config) para não engordar/atrasar
@@ -3892,11 +3908,12 @@ class Component extends DCLogic {
   };
   async syncCatalogo(catalogo, tags) {
     const payload = { catalogo, tags: tags || [] };
-    try {
+    await this.syncWithRetry(async () => {
       await this.api('POST', 'app_config', { body: { id: 'produtos_catalogo', data: payload, updated_at: new Date().toISOString() }, query: null }).catch(async () => {
-        await fetch(this.SUPA_URL + '/rest/v1/app_config?id=eq.produtos_catalogo', { method: 'PATCH', headers: this.headers({ Prefer: 'return=minimal' }), body: JSON.stringify({ data: payload, updated_at: new Date().toISOString() }) });
+        const r = await fetch(this.SUPA_URL + '/rest/v1/app_config?id=eq.produtos_catalogo', { method: 'PATCH', headers: this.headers({ Prefer: 'return=minimal' }), body: JSON.stringify({ data: payload, updated_at: new Date().toISOString() }) });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
       });
-    } catch (e) { console.warn('[catalogo] falha ao sincronizar:', e.message || e); }
+    }, 'catálogo de produtos');
   }
   // ---- menu de tags de estilo (lista mestre, selecionável em cada imagem) ----
   onCatalogoTagInput = (e) => { this.setState({ catalogoTagInput: e.target.value }); };
