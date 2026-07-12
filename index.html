@@ -1676,7 +1676,7 @@
 <x-dc>
 <helmet>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.11.0/dist/tabler-icons.min.css">
-<script>window.__VERSATIL_BUILD__ = "1783884253157";</script>
+<script>window.__VERSATIL_BUILD__ = "1783884689638";</script>
 <style>
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;height:100%;}
@@ -3799,11 +3799,13 @@ class Component extends DCLogic {
   persistCA = () => {
     const snapshot = { conversas: this.state.conversas, agentes: this.state.agentes, canais: this.state.canais, agendamentos: this.state.agendamentos, gcalUrl: this.state.gcalUrl, gcalSecret: this.state.gcalSecret, driveApiKey: this.state.driveApiKey };
     try { localStorage.setItem('versatil_ca', JSON.stringify(snapshot)); } catch (e) {}
-    // sincroniza com o Supabase — config compartilhada (agentes/canais/agendamentos) e as
-    // conversas (cada uma na sua própria linha, tabela "conversas", chave = telefone)
+    // sincroniza com o Supabase JÁ (sem debounce) — config compartilhada (agentes/canais/
+    // agendamentos) e as conversas (cada uma na sua própria linha, tabela "conversas", chave =
+    // telefone). Um debounce aqui atrasava o envio e, se a página fosse recarregada antes do
+    // timer disparar, a alteração nunca chegava ao servidor e sumia ao recarregar.
     const shared = { agentes: snapshot.agentes, canais: snapshot.canais, agendamentos: snapshot.agendamentos, gcalUrl: snapshot.gcalUrl, gcalSecret: snapshot.gcalSecret, driveApiKey: snapshot.driveApiKey };
-    clearTimeout(this._caSyncT);
-    this._caSyncT = setTimeout(() => { this.syncSharedConfig(shared); this.syncConversas(); }, 900);
+    this.syncSharedConfig(shared);
+    this.syncConversas();
   };
   async loadConversasFromSupabase() {
     const rows = await this.api('GET', 'conversas', { query: 'select=dados' });
@@ -3903,8 +3905,8 @@ class Component extends DCLogic {
   }
   persistCatalogo = () => {
     try { localStorage.setItem('versatil_catalogo', JSON.stringify({ catalogo: this.state.catalogo, tags: this.state.catalogoTags })); } catch (e) {}
-    clearTimeout(this._catSyncT);
-    this._catSyncT = setTimeout(() => this.syncCatalogo(this.state.catalogo, this.state.catalogoTags), 900);
+    // sem debounce: sincroniza já, pra não perder a alteração se a página for recarregada logo em seguida
+    this.syncCatalogo(this.state.catalogo, this.state.catalogoTags);
   };
   async syncCatalogo(catalogo, tags) {
     const payload = { catalogo, tags: tags || [] };
