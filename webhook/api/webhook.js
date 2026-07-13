@@ -14,6 +14,12 @@
 //  Só responde quando a conversa está em modo IA (não pausada por
 //  humano). Se o cliente/atendente enviar #humano, o bot pausa.
 //
+//  A IA também transfere sozinha para um atendente humano quando o
+//  cliente pede, quando ela não sabe responder, ou quando um
+//  agendamento é fechado — nesses casos avisa por WhatsApp o número
+//  de notificação (NOTIFY_NUMBER) com os dados do cliente, o resumo
+//  da conversa e a data do agendamento (se houver).
+//
 //  Endpoint após deploy: https://SEU-APP.vercel.app/api/webhook
 //  Configure essa URL no painel da uazapi como webhook da instância
 //  (eventos de "mensagem recebida").
@@ -28,6 +34,7 @@
 //  AGENT_TEMPERATURE     opcional (default: 0.5)
 //  STOP_KEYWORD          opcional (default: #humano) — pausa o bot
 //  AUTO_REPLY            opcional 'false' desliga o envio automático
+//  NOTIFY_NUMBER          opcional (default: 5545999751095) — recebe o aviso de handoff
 
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-flash-latest';
 const TEMPERATURE = process.env.AGENT_TEMPERATURE ? Number(process.env.AGENT_TEMPERATURE) : 0.5;
@@ -35,6 +42,7 @@ const STOP_KEYWORD = (process.env.STOP_KEYWORD || '#humano').toLowerCase();
 const AUTO_REPLY = process.env.AUTO_REPLY !== 'false';
 const DEFAULT_PROMPT = 'Você é um assistente de atendimento da empresa Versatil (gestão para salões e comércio). Responda em português do Brasil, de forma curta, cordial e útil, como uma mensagem de WhatsApp.';
 const FUNIL_ESTAGIOS = ['novo', 'qualificando', 'interessado', 'fechamento', 'ganho', 'perdido'];
+const NOTIFY_NUMBER = process.env.NOTIFY_NUMBER || '5545999751095';
 const SUPA_URL = 'https://kvxsqbfwakfqdxzilvix.supabase.co';
 const SUPA_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2eHNxYmZ3YWtmcWR4emlsdml4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExNzQ0MjYsImV4cCI6MjA5Njc1MDQyNn0.PQads0GXVlNqr11K5co65XbWYoZJWu4V-4h4AR5DdpU';
 // service_role ignora RLS — o app agora exige login (RLS) nas tabelas do
@@ -80,6 +88,12 @@ module.exports = async (req, res) => {
       return res.status(200).json({ ignored: true, reason: 'stop keyword — atendimento humano' });
     }
 
+    // conversa já transferida para um humano (pedido do cliente, IA sem resposta, ou
+    // agendamento fechado) — não responde mais automaticamente até alguém devolver à IA no app
+    if (await conversaEstaComHumano(phoneFromJid(from))) {
+      return res.status(200).json({ ignored: true, reason: 'conversa com atendente humano' });
+    }
+
     const isAudio = /audio|ptt|voice/.test(type) || /audio\//.test(mimetype);
     const isImage = /image|photo|sticker/.test(type) || /image\//.test(mimetype);
     const isDoc   = /document|file/.test(type) || /(pdf|word|excel|sheet|text)/.test(mimetype);
@@ -96,7 +110,7 @@ module.exports = async (req, res) => {
 
     const jsonFormatNote = '\n\n== FORMATO DE RESPOSTA (OBRIGATÓRIO) ==\n'
       + 'Responda SOMENTE com um JSON válido (sem texto fora do JSON), no formato exato:\n'
-      + '{"reply": "sua resposta em português do Brasil, curta e profissional, como mensagem de WhatsApp", "sendImages": true ou false, "subcategoriaId": "id da subcategoria escolhida, ou null", "estilo": "tag do estilo pedido pelo cliente (ex: floral, clássico), ou null", "estagioFunil": "estágio atual do cliente no funil de vendas"}\n'
+      + '{"reply": "sua resposta em português do Brasil, curta e profissional, como mensagem de WhatsApp", "sendImages": true ou false, "subcategoriaId": "id da subcategoria escolhida, ou null", "estilo": "tag do estilo pedido pelo cliente (ex: floral, clássico), ou null", "estagioFunil": "estágio atual do cliente no funil de vendas", "precisaHumano": true ou false, "motivoHumano": "motivo curto, ou null", "agendamentoFechado": true ou false, "agendamentoData": "data/horário combinado, ou null"}\n'
       + (catalogoText
         ? ('Marque "sendImages": true e escolha o "subcategoriaId" SOMENTE quando o cliente pedir explicitamente para ver fotos, exemplos ou modelos de produtos, E uma das subcategorias abaixo corresponder claramente ao que ele pediu na conversa. Se o cliente mencionar um estilo específico (ex: "quero algo floral", "tem modelo minimalista?") e essa tag aparecer na lista de tags da subcategoria, preencha "estilo" com essa tag (copie exatamente como está listado); caso contrário deixe "estilo": null e será enviada uma foto geral da subcategoria. Preste atenção ao contexto: nunca envie fotos de uma categoria/subcategoria diferente da que o cliente está perguntando. Se o cliente não pediu fotos/exemplos, ou nenhuma subcategoria bate com o pedido, use "sendImages": false e "subcategoriaId": null.\n\n== CATÁLOGO DE PRODUTOS DISPONÍVEL (categoria > subcategoria [id]: descrição (tags de estilo disponíveis, se houver)) ==\n' + catalogoText)
         : 'Não há catálogo de imagens cadastrado — sempre responda "sendImages": false e "subcategoriaId": null.')
@@ -107,7 +121,11 @@ module.exports = async (req, res) => {
       + '- "interessado": já viu produtos/fotos/exemplos e demonstrou gostar de algo específico.\n'
       + '- "fechamento": pediu orçamento/preço final, disse que quer fechar ou comprar, ou perguntou como pagar/proceder.\n'
       + '- "ganho": o pedido já foi confirmado/fechado.\n'
-      + '- "perdido": desistiu, disse que não quer mais, ou claramente não há mais chance de venda.';
+      + '- "perdido": desistiu, disse que não quer mais, ou claramente não há mais chance de venda.'
+      + '\n\n== TRANSFERÊNCIA PARA ATENDENTE HUMANO (OBRIGATÓRIO) ==\n'
+      + 'Marque "precisaHumano": true e preencha "motivoHumano" com um resumo curto SOMENTE quando: (a) o cliente pedir explicitamente para falar com um atendente/humano/pessoa, OU (b) o cliente perguntar algo que você não sabe responder com confiança (informação que não está disponível para você, caso muito específico ou fora do que você pode resolver). Nesse caso, sua "reply" deve avisar educadamente que um atendente vai continuar o atendimento em breve — NUNCA invente uma resposta que você não tem certeza. Se não se aplicar, use "precisaHumano": false e "motivoHumano": null.\n'
+      + '== AGENDAMENTO FECHADO (OBRIGATÓRIO) ==\n'
+      + 'Marque "agendamentoFechado": true e preencha "agendamentoData" com a data/horário combinado SOMENTE no momento em que o cliente CONFIRMAR um agendamento/data para o evento (ele concordou com uma data e horário específicos). Nas demais mensagens use "agendamentoFechado": false e "agendamentoData": null.';
 
     const system = (cfg.prompt || process.env.AGENT_PROMPT || DEFAULT_PROMPT)
       + '\n\n== POSTURA E CONDUÇÃO DE VENDAS ==\n'
@@ -140,12 +158,31 @@ module.exports = async (req, res) => {
     const reply = (parsed && typeof parsed.reply === 'string' && parsed.reply.trim()) ? parsed.reply.trim() : raw.trim();
     const wantsImages = !!(parsed && parsed.sendImages && parsed.subcategoriaId);
 
+    const telefone = phoneFromJid(from);
+    const nomeCliente = msg.senderName || msg.pushName || msg.notifyName || msg.chatName || msg.name || telefone;
+
     // classificação no funil de vendas — best-effort, nunca derruba a resposta ao cliente
     const estagio = (parsed && FUNIL_ESTAGIOS.includes(parsed.estagioFunil)) ? parsed.estagioFunil : null;
     if (estagio) {
-      const telefone = phoneFromJid(from);
-      const nomeCliente = msg.senderName || msg.pushName || msg.notifyName || msg.chatName || msg.name || telefone;
       upsertFunilCliente(telefone, nomeCliente, estagio).catch((e) => console.error('[funil] falha ao salvar estágio:', e.message || e));
+    }
+
+    // transferência para atendente humano — cliente pediu, IA não soube responder, ou um
+    // agendamento acabou de ser fechado. Marca a conversa como humana (o app para de deixar
+    // a IA responder) e avisa o número de notificação com os dados do cliente e o resumo.
+    const precisaHumano = !!(parsed && parsed.precisaHumano);
+    const agendamentoFechado = !!(parsed && parsed.agendamentoFechado);
+    if (AUTO_REPLY && (precisaHumano || agendamentoFechado)) {
+      marcarConversaHumana(telefone).catch((e) => console.error('[handoff] falha ao marcar conversa como humana:', e.message || e));
+      const motivo = agendamentoFechado ? 'Agendamento fechado' : ((parsed && parsed.motivoHumano) || 'IA não soube responder');
+      const agendamentoData = (parsed && parsed.agendamentoData) || '';
+      const resumoMsg = '🔔 *Atendimento precisa de atenção humana*\n'
+        + 'Cliente: ' + nomeCliente + '\n'
+        + 'Telefone: ' + telefone + '\n'
+        + 'Motivo: ' + motivo
+        + (agendamentoData ? ('\nData do agendamento: ' + agendamentoData) : '')
+        + (history ? ('\n\nResumo da conversa:\n' + history + '\nCliente: ' + text) : ('\n\nÚltima mensagem do cliente: ' + text));
+      notifyHuman(resumoMsg).catch((e) => console.error('[handoff] falha ao notificar:', e.message || e));
     }
 
     let replied = false;
@@ -257,6 +294,19 @@ function phoneFromJid(jid) {
   return digits ? ('+' + digits) : '';
 }
 
+async function conversaEstaComHumano(telefone) {
+  if (!telefone) return false;
+  try {
+    const r = await fetch(SUPA_URL + '/rest/v1/conversas?telefone=eq.' + encodeURIComponent(telefone) + '&select=dados', {
+      headers: { apikey: SUPA_ANON_KEY, Authorization: 'Bearer ' + SUPA_SERVICE_KEY },
+    });
+    if (!r.ok) return false;
+    const rows = await r.json();
+    const dados = rows && rows[0] && rows[0].dados;
+    return !!(dados && dados.humano === true && !dados.resolvida);
+  } catch (e) { return false; }
+}
+
 async function upsertFunilCliente(telefone, nome, estagio) {
   if (!telefone) return;
   await fetch(SUPA_URL + '/rest/v1/funil_clientes', {
@@ -264,6 +314,31 @@ async function upsertFunilCliente(telefone, nome, estagio) {
     headers: { apikey: SUPA_ANON_KEY, Authorization: 'Bearer ' + SUPA_SERVICE_KEY, 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' },
     body: JSON.stringify({ telefone, nome: nome || telefone, estagio, updated_at: new Date().toISOString() }),
   });
+}
+
+// marca a conversa como "com humano" na tabela conversas (mesma linha que o app lê/escreve) —
+// só atualiza uma linha que já existe (lê e reescreve o mesmo "dados" com o campo alterado),
+// nunca cria uma linha nova, para não gravar um snapshot de conversa incompleto/sem mensagens
+async function marcarConversaHumana(telefone) {
+  if (!telefone) return;
+  const r = await fetch(SUPA_URL + '/rest/v1/conversas?telefone=eq.' + encodeURIComponent(telefone) + '&select=dados', {
+    headers: { apikey: SUPA_ANON_KEY, Authorization: 'Bearer ' + SUPA_SERVICE_KEY },
+  });
+  if (!r.ok) return;
+  const rows = await r.json();
+  const dados = rows && rows[0] && rows[0].dados;
+  if (!dados) return; // conversa ainda não sincronizada pelo app — nada a atualizar ainda
+  const novoDados = Object.assign({}, dados, { humano: true, iaAtiva: false, resolvida: false, _localCtrl: true });
+  await fetch(SUPA_URL + '/rest/v1/conversas?telefone=eq.' + encodeURIComponent(telefone), {
+    method: 'PATCH',
+    headers: { apikey: SUPA_ANON_KEY, Authorization: 'Bearer ' + SUPA_SERVICE_KEY, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+    body: JSON.stringify({ dados: novoDados, updated_at: new Date().toISOString() }),
+  });
+}
+
+async function notifyHuman(text) {
+  if (!process.env.UAZAPI_BASE_URL || !process.env.UAZAPI_INSTANCE_TOKEN) return;
+  await uazapiSendText(NOTIFY_NUMBER, text);
 }
 
 async function fetchCatalogo() {
@@ -328,8 +403,12 @@ async function geminiGenerate(system, parts, key, model, temperature, jsonMode) 
         subcategoriaId: { type: 'STRING', nullable: true },
         estilo: { type: 'STRING', nullable: true },
         estagioFunil: { type: 'STRING', enum: FUNIL_ESTAGIOS },
+        precisaHumano: { type: 'BOOLEAN' },
+        motivoHumano: { type: 'STRING', nullable: true },
+        agendamentoFechado: { type: 'BOOLEAN' },
+        agendamentoData: { type: 'STRING', nullable: true },
       },
-      required: ['reply', 'sendImages', 'estagioFunil'],
+      required: ['reply', 'sendImages', 'estagioFunil', 'precisaHumano', 'agendamentoFechado'],
     };
   }
   const payload = {
