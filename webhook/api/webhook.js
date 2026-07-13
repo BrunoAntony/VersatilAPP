@@ -80,7 +80,10 @@ module.exports = async (req, res) => {
     if (!from) return res.status(200).json({ ignored: true, reason: 'sem remetente' });
     // config enviada pelo app (tem prioridade sobre as variáveis de ambiente)
     const cfg = (await readConfig()) || {};
-    const geminiKey = cfg.geminiKey || process.env.GEMINI_API_KEY;
+    // GEMINI_API_KEY é a única fonte da chave agora (o app não guarda/envia mais
+    // chave nenhuma); cfg.geminiKey só existe por causa de configs antigas salvas
+    // antes dessa mudança — nunca deve ter prioridade sobre a variável de ambiente
+    const geminiKey = process.env.GEMINI_API_KEY || cfg.geminiKey;
     const model = cfg.model || GEMINI_MODEL;
     const temperature = (cfg.temperature != null ? cfg.temperature : TEMPERATURE);
     if (cfg.enabled === false) return res.status(200).json({ ignored: true, reason: 'agente desativado no app' });
