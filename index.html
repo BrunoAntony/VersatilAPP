@@ -1676,7 +1676,7 @@
 <x-dc>
 <helmet>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.11.0/dist/tabler-icons.min.css">
-<script>window.__VERSATIL_BUILD__ = "1784010200000";</script>
+<script>window.__VERSATIL_BUILD__ = "1784012600000";</script>
 <style>
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;height:100%;}
@@ -2399,25 +2399,28 @@ input:focus,select:focus,textarea:focus{outline:2px solid #3b82f6;outline-offset
             <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column;">
               <!-- conversas -->
               <sc-for list="{{ convList }}" as="c" hint-placeholder-count="3">
-                <button onClick="{{ c.onClick }}" style="{{ c.rowStyle }}">
-                  <div style="{{ c.avatarWrap }}">
-                    <div style="{{ c.avatarStyle }}">{{ c.initials }}</div>
-                    <span style="{{ c.canalBadgeStyle }}"><i class="ti {{ c.canalIcon }}"></i></span>
-                  </div>
-                  <div style="flex:1;min-width:0;">
-                    <div style="display:flex;align-items:center;gap:7px;">
-                      <span style="font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;">{{ c.nome }}</span>
-                      <sc-if value="{{ c.handlerShow }}" hint-placeholder-val="{{ true }}"><span style="{{ c.handlerStyle }}"><i class="ti {{ c.handlerIcon }}" style="font-size:11px;flex-shrink:0;"></i><span style="{{ c.handlerLabelStyle }}">{{ c.handlerLabel }}</span></span></sc-if>
-                      <sc-if value="{{ c.alertShow }}" hint-placeholder-val="{{ false }}"><i class="ti ti-alert-circle" style="font-size:14px;color:#ef4444;flex-shrink:0;"></i></sc-if>
-                      <span style="font-size:11px;color:var(--color-text-secondary);flex-shrink:0;">{{ c.time }}</span>
+                <div style="{{ c.rowStyle }}">
+                  <button onClick="{{ c.onClick }}" style="display:flex;align-items:flex-start;gap:12px;flex:1;min-width:0;border:none;background:transparent;cursor:pointer;text-align:left;padding:0;">
+                    <div style="{{ c.avatarWrap }}">
+                      <div style="{{ c.avatarStyle }}">{{ c.initials }}</div>
+                      <span style="{{ c.canalBadgeStyle }}"><i class="ti {{ c.canalIcon }}"></i></span>
                     </div>
-                    <div style="font-size:12.5px;color:var(--color-text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:3px;">{{ c.preview }}</div>
-                    <div style="display:flex;align-items:center;gap:6px;margin-top:8px;">
-                      <sc-if value="{{ c.setor }}" hint-placeholder-val="{{ false }}"><span style="{{ c.setorBadgeStyle }}"><i class="ti ti-tag" style="font-size:12px;"></i>{{ c.setor }}</span></sc-if>
-                      <sc-if value="{{ c.unread }}" hint-placeholder-val="{{ false }}"><span style="{{ c.unreadStyle }}">{{ c.unread }}</span></sc-if>
+                    <div style="flex:1;min-width:0;">
+                      <div style="display:flex;align-items:center;gap:7px;">
+                        <span style="font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;">{{ c.nome }}</span>
+                        <sc-if value="{{ c.handlerShow }}" hint-placeholder-val="{{ true }}"><span style="{{ c.handlerStyle }}"><i class="ti {{ c.handlerIcon }}" style="font-size:11px;flex-shrink:0;"></i><span style="{{ c.handlerLabelStyle }}">{{ c.handlerLabel }}</span></span></sc-if>
+                        <sc-if value="{{ c.alertShow }}" hint-placeholder-val="{{ false }}"><i class="ti ti-alert-circle" style="font-size:14px;color:#ef4444;flex-shrink:0;"></i></sc-if>
+                        <span style="font-size:11px;color:var(--color-text-secondary);flex-shrink:0;">{{ c.time }}</span>
+                      </div>
+                      <div style="font-size:12.5px;color:var(--color-text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:3px;">{{ c.preview }}</div>
+                      <div style="display:flex;align-items:center;gap:6px;margin-top:8px;">
+                        <sc-if value="{{ c.setor }}" hint-placeholder-val="{{ false }}"><span style="{{ c.setorBadgeStyle }}"><i class="ti ti-tag" style="font-size:12px;"></i>{{ c.setor }}</span></sc-if>
+                        <sc-if value="{{ c.unread }}" hint-placeholder-val="{{ false }}"><span style="{{ c.unreadStyle }}">{{ c.unread }}</span></sc-if>
+                      </div>
                     </div>
-                  </div>
-                </button>
+                  </button>
+                  <button onClick="{{ c.onRenomear }}" title="Renomear contato" style="background:none;border:none;color:var(--color-text-secondary);cursor:pointer;padding:6px;flex-shrink:0;align-self:flex-start;"><i class="ti ti-edit" style="font-size:15px;"></i></button>
+                </div>
               </sc-for>
               <sc-if value="{{ convListEmpty }}" hint-placeholder-val="{{ false }}">
                 <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:40px 24px;text-align:center;">
@@ -6491,6 +6494,7 @@ class Component extends DCLogic {
         const handlerAgente = handlerIsIa ? this.agenteDaConversa(c) : null;
         return {
           onClick: () => this.openConv(c.id),
+          onRenomear: (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.openRenomearConv(c.id); },
           initials: this.initials(c.nome), nome: c.nome,
           canalIcon: c.canal === 'WhatsApp' ? 'ti-brand-whatsapp' : (c.canal === 'E-mail' ? 'ti-mail' : 'ti-message-dots'),
           canalBadgeStyle: { position: 'absolute', right: '-2px', bottom: '-2px', width: '18px', height: '18px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', color: '#fff', background: c.canal === 'WhatsApp' ? '#25D366' : (c.canal === 'E-mail' ? '#6b7280' : '#3b82f6'), border: '2px solid var(--color-background-primary)' },
