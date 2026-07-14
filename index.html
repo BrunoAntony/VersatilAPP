@@ -1676,7 +1676,7 @@
 <x-dc>
 <helmet>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.11.0/dist/tabler-icons.min.css">
-<script>window.__VERSATIL_BUILD__ = "1783995000000";</script>
+<script>window.__VERSATIL_BUILD__ = "1783996800000";</script>
 <style>
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;height:100%;}
@@ -3771,7 +3771,18 @@ class Component extends DCLogic {
 
   componentDidMount() { this.restoreSession(() => { if (this.state.authSession) this.boot(); }); }
   componentWillUnmount() { clearInterval(this._pollMsgs); clearInterval(this._updCheck); this.stopSSE(); }
-  boot() { this.loadAll(); this.seedAtendimento(); this.loadCatalogo(); this.loadFunil(); this.loadAgendamentos(); this.loadEmpresas(); setTimeout(() => this.checkRetornosIA(), 800); this._pollMsgs = setInterval(() => this.pollNovasMensagens(), 12000); this._updCheck = setInterval(() => this.checkForUpdate(), 60000); setTimeout(() => this.checkForUpdate(), 5000); setTimeout(() => this.startSSE(), 1500); }
+  boot() {
+    // boot() pode rodar mais de uma vez na mesma sessão (ex: ao trocar de empresa no
+    // seletor) — sem limpar o que já estava rodando, cada troca empilhava mais um
+    // intervalo/SSE duplicado, todos ativos ao mesmo tempo
+    clearInterval(this._pollMsgs); clearInterval(this._updCheck); this.stopSSE();
+    this.loadAll(); this.seedAtendimento(); this.loadCatalogo(); this.loadFunil(); this.loadAgendamentos(); this.loadEmpresas();
+    setTimeout(() => this.checkRetornosIA(), 800);
+    this._pollMsgs = setInterval(() => this.pollNovasMensagens(), 12000);
+    this._updCheck = setInterval(() => this.checkForUpdate(), 60000);
+    setTimeout(() => this.checkForUpdate(), 5000);
+    setTimeout(() => this.startSSE(), 1500);
+  }
   // ---------- autenticação (usuário/senha próprios — tabela app_users no Supabase) ----------
   // Não usa Supabase Auth: o servidor (webhook/api/login.js) confere a senha (hash) e devolve
   // um JWT assinado com o mesmo JWT secret do projeto Supabase — as políticas de RLS
@@ -3788,10 +3799,13 @@ class Component extends DCLogic {
     if (!r.ok) throw new Error(data.error || 'Falha no login');
     return data;
   }
-  saveSession(data) {
+  saveSession(data, cb) {
     const session = { access_token: data.access_token, expires_at: data.expires_at, username: data.username || '', empresa_id: data.empresa_id || '' };
     try { localStorage.setItem('versatil_auth', JSON.stringify(session)); } catch (e) {}
-    this.setState({ authSession: session });
+    // setState é assíncrono — quem chama boot() logo em seguida precisa esperar o
+    // callback, senão as primeiras requisições saem com o token da sessão anterior
+    // (ex: ao trocar de empresa, mostrava dado da empresa antiga por alguns instantes)
+    this.setState({ authSession: session }, cb);
     return session;
   }
   restoreSession(cb) {
@@ -3825,9 +3839,10 @@ class Component extends DCLogic {
     this.setState({ authBusy: true, authError: '' });
     try {
       const data = await this.authSignIn(username, password);
-      this.saveSession(data);
-      this.setState({ authBusy: false, authForm: { username: '', password: '' } });
-      this.boot();
+      this.saveSession(data, () => {
+        this.setState({ authBusy: false, authForm: { username: '', password: '' } });
+        this.boot();
+      });
     } catch (e) {
       this.setState({ authBusy: false, authError: this.authFriendly(e) });
     }
@@ -3860,9 +3875,10 @@ class Component extends DCLogic {
       });
       const data = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(data.error || ('HTTP ' + r.status));
-      this.saveSession(data);
-      this.toast('success', 'Agora vendo: ' + (data.empresaNome || 'empresa selecionada'));
-      this.boot();
+      this.saveSession(data, () => {
+        this.toast('success', 'Agora vendo: ' + (data.empresaNome || 'empresa selecionada'));
+        this.boot();
+      });
     } catch (e) { this.toast('error', 'Falha ao trocar de empresa: ' + (e.message || e)); }
   }
   openNovaEmpresa() { this.setState({ empresaMenuOpen: false, modal: 'nova_empresa', form: { nome: '' } }); }
