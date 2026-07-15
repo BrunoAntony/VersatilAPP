@@ -55,7 +55,7 @@ const SUPA_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 // Supabase, mas o webhook precisa continuar lendo o catálogo sem login.
 const SUPA_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || SUPA_ANON_KEY;
 const { readConfig } = require('./_configStore');
-const { resolveContext } = require('./_empresa');
+const { resolveContext, resolveSegmento } = require('./_empresa');
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -94,6 +94,10 @@ module.exports = async (req, res) => {
     const empresaId = ctx.empresaId;
     const uazBase = String(ctx.uazBaseUrl || '').replace(/\/+$/, '');
     const uazToken = ctx.uazToken || '';
+    // segmento da empresa (ex: "imobiliaria") — muda o vocabulário do prompt
+    // (catálogo de "imóveis" em vez de "produtos", roteiro de vendas adequado)
+    const segmento = await resolveSegmento(empresaId, SUPA_SERVICE_KEY);
+    const isImobiliaria = segmento === 'imobiliaria';
 
     // config enviada pelo app (tem prioridade sobre as variáveis de ambiente)
     const cfg = (await readConfig(empresaId)) || {};
@@ -132,12 +136,15 @@ module.exports = async (req, res) => {
     const catalogo = await fetchCatalogo(empresaId);
     const catalogoText = buildCatalogoPrompt(catalogo);
 
+    const itemSing = isImobiliaria ? 'imóvel' : 'produto';
+    const itemPlural = isImobiliaria ? 'imóveis' : 'produtos';
+    const catalogoLabel = isImobiliaria ? 'CATÁLOGO DE IMÓVEIS DISPONÍVEIS (tipo > imóvel [id]: descrição (tags de estilo disponíveis, se houver))' : 'CATÁLOGO DE PRODUTOS DISPONÍVEL (categoria > subcategoria [id]: descrição (tags de estilo disponíveis, se houver))';
     const jsonFormatNote = '\n\n== FORMATO DE RESPOSTA (OBRIGATÓRIO) ==\n'
       + 'Responda SOMENTE com um JSON válido (sem texto fora do JSON), no formato exato:\n'
       + '{"reply": "sua resposta em português do Brasil, curta e profissional, como mensagem de WhatsApp", "sendImages": true ou false, "subcategoriaId": "id da subcategoria escolhida, ou null", "estilo": "tag do estilo pedido pelo cliente (ex: floral, clássico), ou null", "estagioFunil": "estágio atual do cliente no funil de vendas", "precisaHumano": true ou false, "motivoHumano": "motivo curto, ou null", "agendamentoFechado": true ou false, "agendamentoData": "data/horário combinado, ou null", "gerarImagem": true ou false, "promptImagem": "descrição em inglês da imagem a gerar, ou null"}\n'
       + (catalogoText
-        ? ('Marque "sendImages": true e escolha o "subcategoriaId" SOMENTE quando o cliente pedir explicitamente para ver fotos, exemplos ou modelos de produtos, E uma das subcategorias abaixo corresponder claramente ao que ele pediu na conversa. Se o cliente mencionar um estilo específico (ex: "quero algo floral", "tem modelo minimalista?") e essa tag aparecer na lista de tags da subcategoria, preencha "estilo" com essa tag (copie exatamente como está listado); caso contrário deixe "estilo": null e será enviada uma foto geral da subcategoria. Preste atenção ao contexto: nunca envie fotos de uma categoria/subcategoria diferente da que o cliente está perguntando. Se o cliente não pediu fotos/exemplos, ou nenhuma subcategoria bate com o pedido, use "sendImages": false e "subcategoriaId": null.\n\n== CATÁLOGO DE PRODUTOS DISPONÍVEL (categoria > subcategoria [id]: descrição (tags de estilo disponíveis, se houver)) ==\n' + catalogoText)
-        : 'Não há catálogo de imagens cadastrado — sempre responda "sendImages": false e "subcategoriaId": null.')
+        ? ('Marque "sendImages": true e escolha o "subcategoriaId" SOMENTE quando o cliente pedir explicitamente para ver fotos, exemplos ou opções de ' + itemPlural + ', E uma das opções abaixo corresponder claramente ao que ele pediu na conversa. Se o cliente mencionar um estilo específico (ex: "quero algo floral", "tem modelo minimalista?") e essa tag aparecer na lista de tags, preencha "estilo" com essa tag (copie exatamente como está listado); caso contrário deixe "estilo": null e será enviada uma foto geral da opção escolhida. Preste atenção ao contexto: nunca envie fotos de uma categoria/subcategoria diferente da que o cliente está perguntando. Se o cliente não pediu fotos/exemplos, ou nenhuma opção bate com o pedido, use "sendImages": false e "subcategoriaId": null.\n\n== ' + catalogoLabel + ' ==\n' + catalogoText)
+        : ('Não há catálogo de ' + itemPlural + ' cadastrado — sempre responda "sendImages": false e "subcategoriaId": null.'))
       + '\n\n== CLASSIFICAÇÃO NO FUNIL DE VENDAS (OBRIGATÓRIO) ==\n'
       + 'Preencha "estagioFunil" com o estágio atual do cliente, considerando toda a conversa (não só a última mensagem), usando exatamente um destes valores:\n'
       + '- "novo": primeiro contato, ainda não disse claramente o que precisa.\n'
@@ -158,12 +165,17 @@ module.exports = async (req, res) => {
     const saudacao = Number(horaBR) < 12 ? 'Bom dia' : Number(horaBR) < 18 ? 'Boa tarde' : 'Boa noite';
     const saudacaoConfigurada = (cfg.welcome || '').trim();
 
+    const qualificacaoVendas = isImobiliaria
+      ? 'Quando o cliente demonstrar intenção REAL de negociar (pediu mais informações de um imóvel específico, disse que quer visitar ou perguntou sobre condições), colete as informações na seguinte ORDEM, uma pergunta por vez: (1) primeiro, se busca COMPRAR ou ALUGAR; (2) depois, a FAIXA DE VALOR/orçamento disponível; (3) depois, o BAIRRO ou região de preferência e o tipo de imóvel (apartamento, casa, terreno). Só pergunte sobre agendar uma VISITA depois de já ter essas informações, e somente quando um imóvel específico do catálogo atender ao que ele procura.'
+      : 'Quando o cliente demonstrar intenção REAL de fechar negócio (pediu orçamento, disse que quer comprar/fechar, perguntou como pagar ou como proceder), colete as informações na seguinte ORDEM, uma pergunta por vez: (1) primeiro, se ele já tem as MEDIDAS definidas da caixa (dimensões); (2) depois, a QUANTIDADE de caixas desejada; (3) depois, se ele já tem a IDENTIDADE VISUAL pronta (logo, cores, arte) ou se precisa de ajuda com isso. Só pergunte a DATA do evento depois de já ter essas três informações, e somente se for realmente necessário para prazo de produção/entrega.';
     const system = (cfg.prompt || process.env.AGENT_PROMPT || DEFAULT_PROMPT)
       + '\n\n== POSTURA E CONDUÇÃO DE VENDAS ==\n'
       + 'Mantenha sempre um tom profissional e corporativo — cordial, mas sem gírias, sem excesso de emojis e sem informalidade exagerada. '
-      + 'Conduza a conversa ativamente para avançar o cliente no funil de vendas: entenda a necessidade dele, desperte interesse mostrando os produtos certos do catálogo e busque encaminhar para o fechamento — nunca deixe a conversa estagnada sem próximo passo. '
-      + 'NÃO peça a data do evento nem outros dados do evento enquanto o cliente ainda está só explorando, pedindo informações ou fotos. Antes disso, foque em qualificar a necessidade e apresentar o catálogo.'
-      + '\nQuando o cliente demonstrar intenção REAL de fechar negócio (pediu orçamento, disse que quer comprar/fechar, perguntou como pagar ou como proceder), colete as informações na seguinte ORDEM, uma pergunta por vez: (1) primeiro, se ele já tem as MEDIDAS definidas da caixa (dimensões); (2) depois, a QUANTIDADE de caixas desejada; (3) depois, se ele já tem a IDENTIDADE VISUAL pronta (logo, cores, arte) ou se precisa de ajuda com isso. Só pergunte a DATA do evento depois de já ter essas três informações, e somente se for realmente necessário para prazo de produção/entrega.'
+      + ('Conduza a conversa ativamente para avançar o cliente no funil de vendas: entenda a necessidade dele, desperte interesse mostrando os ' + itemPlural + ' certos do catálogo e busque encaminhar para o fechamento — nunca deixe a conversa estagnada sem próximo passo. ')
+      + (isImobiliaria
+        ? 'NÃO tente marcar uma visita enquanto o cliente ainda está só explorando, pedindo informações ou fotos de imóveis. Antes disso, foque em entender o que ele procura e apresentar o catálogo.'
+        : 'NÃO peça a data do evento nem outros dados do evento enquanto o cliente ainda está só explorando, pedindo informações ou fotos. Antes disso, foque em qualificar a necessidade e apresentar o catálogo.')
+      + ('\n' + qualificacaoVendas)
       + '\nFaça no máximo UMA pergunta por mensagem. Nunca bombardeie o cliente com várias perguntas de uma vez — prefira avançar aos poucos, uma coisa de cada vez.'
       + '\nNUNCA comece a mensagem com interjeições genéricas como "Ótimo!", "Excelente!", "Perfeito!", "Legal!", "Que bom!" — isso soa robótico e repetitivo. Em vez disso, reaja de forma natural ao que o cliente disse (comente algo específico, mostre que entendeu) antes de seguir para a próxima parte da conversa, como uma pessoa de verdade escreveria, não como um roteiro de atendimento. Evite que a conversa pareça um interrogatório.'
       + '\nResponda SEMPRE em português do Brasil, curto e objetivo, como mensagem de WhatsApp.'

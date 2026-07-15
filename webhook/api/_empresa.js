@@ -56,4 +56,18 @@ async function resolveContext(canalKey, serviceKey) {
   };
 }
 
-module.exports = { resolveCanal, resolveDefaultEmpresa, resolveContext };
+// segmento da empresa (ex: "imobiliaria") — usado pra adaptar o vocabulário do
+// prompt do agente de IA (catálogo de "produtos" vs. de "imóveis")
+async function resolveSegmento(empresaId, serviceKey) {
+  if (!empresaId) return 'geral';
+  try {
+    const r = await fetch(SUPA_URL + '/rest/v1/empresas?id=eq.' + encodeURIComponent(empresaId) + '&select=segmento', {
+      headers: { apikey: SUPA_ANON_KEY, Authorization: 'Bearer ' + serviceKey },
+    });
+    if (!r.ok) return 'geral';
+    const rows = await r.json();
+    return (rows && rows[0] && rows[0].segmento) || 'geral';
+  } catch (e) { return 'geral'; }
+}
+
+module.exports = { resolveCanal, resolveDefaultEmpresa, resolveContext, resolveSegmento };
