@@ -1676,7 +1676,7 @@
 <x-dc>
 <helmet>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.11.0/dist/tabler-icons.min.css">
-<script>window.__VERSATIL_BUILD__ = "1784012600000";</script>
+<script>window.__VERSATIL_BUILD__ = "1784016400000";</script>
 <style>
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;height:100%;}
@@ -2671,6 +2671,39 @@ input:focus,select:focus,textarea:focus{outline:2px solid #3b82f6;outline-offset
               <div style="font-size:14px;color:var(--color-text-secondary);line-height:1.5;max-width:340px;">Quando a IA marcar um horário numa conversa, o agendamento aparece aqui com nome do cliente, telefone e o resumo das solicitações.</div>
             </div>
           </sc-if>
+        </div>
+      </sc-if>
+
+      <!-- ===== CHAT INTERNO ===== -->
+      <sc-if value="{{ isChatInterno }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;height:100%;background:var(--color-background-primary);border:1px solid var(--color-border-tertiary);border-radius:var(--radius);overflow:hidden;">
+          <div style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;">
+            <sc-if value="{{ chatInternoEmpty }}" hint-placeholder-val="{{ false }}">
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;">
+                <div style="width:64px;height:64px;border-radius:50%;background:var(--color-background-secondary);display:flex;align-items:center;justify-content:center;color:var(--color-text-secondary);"><i class="ti ti-message-2-bolt" style="font-size:30px;"></i></div>
+                <div style="font-weight:700;font-size:16px;">Nenhuma mensagem ainda</div>
+                <div style="font-size:13.5px;color:var(--color-text-secondary);max-width:320px;">Converse com a equipe direto por aqui, sem precisar do WhatsApp.</div>
+              </div>
+            </sc-if>
+            <sc-for list="{{ chatInternoList }}" as="m" hint-placeholder-count="3">
+              <div style="{{ m.rowStyle }}">
+                <div style="{{ m.colStyle }}">
+                  <span style="{{ m.nameStyle }}">{{ m.autorNome }}</span>
+                  <div style="{{ m.bubbleWrapStyle }}">
+                    <sc-if value="{{ m.showRemove }}" hint-placeholder-val="{{ false }}">
+                      <button onClick="{{ m.onRemove }}" title="Remover mensagem" style="background:none;border:none;color:var(--color-text-secondary);cursor:pointer;padding:4px;flex-shrink:0;"><i class="ti ti-trash" style="font-size:14px;"></i></button>
+                    </sc-if>
+                    <div style="{{ m.bubbleStyle }}">{{ m.texto }}</div>
+                  </div>
+                  <span style="{{ m.metaStyle }}">{{ m.time }}</span>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex;align-items:flex-end;gap:10px;padding:14px 18px;border-top:1px solid var(--color-border-tertiary);background:var(--color-background-secondary);">
+            <textarea rows="1" value="{{ chatInternoInputVal }}" onInput="{{ onChatInternoInput }}" onKeyDown="{{ onChatInternoKey }}" placeholder="Escreva uma mensagem para a equipe…" style="flex:1;resize:none;padding:11px 14px;border:1px solid var(--color-border-tertiary);border-radius:10px;background:var(--color-background-primary);font-size:13.5px;font-family:inherit;max-height:120px;"></textarea>
+            <button onClick="{{ onSendChatInterno }}" style="display:flex;align-items:center;justify-content:center;background:#1a2b42;color:#fff;border:none;border-radius:10px;width:42px;height:42px;flex-shrink:0;cursor:pointer;"><i class="ti ti-send" style="font-size:18px;"></i></button>
+          </div>
         </div>
       </sc-if>
 
@@ -3813,6 +3846,8 @@ class Component extends DCLogic {
     empresaMenuOpen: false,
     empresasDisponiveis: [],
     isAdminEmpresas: false,
+    chatInternoMsgs: [],
+    chatInternoInput: '',
     tab: 'dashboard',
     data: { vendas: [], compras: [], despesas: [], estoque: [], clientes: [], fornecedores: [] },
     loading: true,
@@ -3860,23 +3895,24 @@ class Component extends DCLogic {
 
   componentDidMount() { this.restoreSession(() => { if (this.state.authSession) this.boot(); }); }
   componentWillUnmount() { clearInterval(this._pollMsgs); clearInterval(this._updCheck); this.stopSSE(); }
-  FUNCIONARIO_TABS = ['atendimento', 'funil', 'agendamentos'];
+  FUNCIONARIO_TABS = ['atendimento', 'funil', 'agendamentos', 'chatinterno'];
   boot() {
     // boot() pode rodar mais de uma vez na mesma sessão (ex: ao trocar de empresa no
     // seletor) — sem limpar o que já estava rodando, cada troca empilhava mais um
     // intervalo/SSE duplicado, todos ativos ao mesmo tempo
-    clearInterval(this._pollMsgs); clearInterval(this._updCheck); this.stopSSE();
-    // funcionário só enxerga Atendimento/Funil/Agendamentos — se a aba atual (ex:
-    // Dashboard, o padrão inicial) não for uma dessas, redireciona pra não cair numa
-    // tela que o RLS vai bloquear os dados
+    clearInterval(this._pollMsgs); clearInterval(this._updCheck); clearInterval(this._chatInternoPoll); this.stopSSE();
+    // funcionário só enxerga Atendimento/Funil/Agendamentos/Chat Interno — se a aba
+    // atual (ex: Dashboard, o padrão inicial) não for uma dessas, redireciona pra não
+    // cair numa tela que o RLS vai bloquear os dados
     const s = this.state.authSession;
     if (s && s.role === 'funcionario' && !s.isAdmin && this.FUNCIONARIO_TABS.indexOf(this.state.tab) < 0) {
       this.setState({ tab: 'atendimento' });
     }
-    this.loadAll(); this.seedAtendimento(); this.loadCatalogo(); this.loadFunil(); this.loadAgendamentos(); this.loadEmpresas(); this.loadUsuarios();
+    this.loadAll(); this.seedAtendimento(); this.loadCatalogo(); this.loadFunil(); this.loadAgendamentos(); this.loadEmpresas(); this.loadUsuarios(); this.loadChatInterno();
     setTimeout(() => this.checkRetornosIA(), 800);
     this._pollMsgs = setInterval(() => this.pollNovasMensagens(), 12000);
     this._updCheck = setInterval(() => this.checkForUpdate(), 60000);
+    this._chatInternoPoll = setInterval(() => { if (this.state.tab === 'chatinterno') this.loadChatInterno(); }, 5000);
     setTimeout(() => this.checkForUpdate(), 5000);
     setTimeout(() => this.startSSE(), 1500);
   }
@@ -4033,6 +4069,31 @@ class Component extends DCLogic {
       if (!r.ok) throw new Error(data.error || ('HTTP ' + r.status));
       this.setState({ usuariosEmpresa: data.users || [] });
     } catch (e) { console.warn('[users] falha ao carregar:', e.message || e); }
+  }
+  // ---- chat interno (equipe conversa entre si, sem passar pelo WhatsApp) ----
+  async loadChatInterno() {
+    try {
+      const rows = await this.api('GET', 'chat_interno', { query: 'select=*&order=created_at.asc&limit=200' });
+      this.setState({ chatInternoMsgs: rows || [] });
+    } catch (e) { console.warn('[chat_interno] falha ao carregar:', e.message || e); }
+  }
+  onChatInternoInput = (e) => this.setState({ chatInternoInput: e.target.value });
+  onChatInternoKey = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); this.sendChatInterno(); } };
+  async sendChatInterno() {
+    const texto = (this.state.chatInternoInput || '').trim();
+    if (!texto) return;
+    const autor_nome = this.nomeUsuario(this.currentUsername()) || this.currentUsername() || 'Usuário';
+    this.setState({ chatInternoInput: '' });
+    try {
+      await this.api('POST', 'chat_interno', { body: { texto, autor_nome }, query: null });
+      this.loadChatInterno();
+    } catch (e) { this.toast('error', 'Falha ao enviar mensagem: ' + (e.message || e)); }
+  }
+  async removeChatInternoMsg(id) {
+    try {
+      await this.api('DELETE', 'chat_interno', { id });
+      this.setState(s => ({ chatInternoMsgs: (s.chatInternoMsgs || []).filter(m => m.id !== id) }));
+    } catch (e) { this.toast('error', 'Falha ao remover mensagem: ' + (e.message || e)); }
   }
   openNovoFuncionario() { this.setState({ modal: 'novo_funcionario', form: { username: '', role: 'funcionario' } }); }
   async saveNovoFuncionario() {
@@ -5968,6 +6029,7 @@ class Component extends DCLogic {
         { key: 'funil', label: 'Funil de Vendas', icon: 'ti-chart-funnel', badge: (S.funilClientes || []).length || null, badgeColor: '#8b5cf6' },
         { key: 'agendamentos', label: 'Agendamentos', icon: 'ti-calendar-event', badge: (S.agendamentos || []).length || null, badgeColor: '#16a34a' },
         { key: 'agentes', label: 'Agentes IA', icon: 'ti-robot', badge: agentesAtivos || null, badgeColor: '#10b981' },
+        { key: 'chatinterno', label: 'Chat Interno', icon: 'ti-message-2-bolt' },
       ] },
       { key: 'comercial', label: 'COMERCIAL', items: [
         { key: 'vendas', label: 'Vendas', icon: 'ti-shopping-cart' },
@@ -6028,6 +6090,7 @@ class Component extends DCLogic {
       funil: ['Funil de Vendas', 'Posição de cada cliente no funil, do primeiro contato ao fechamento'],
       agendamentos: ['Agendamentos', 'Horários marcados pelos agentes de IA'],
       agentes: ['Agentes IA', 'Automação inteligente do atendimento'],
+      chatinterno: ['Chat Interno', 'Converse com a equipe sem passar pelo WhatsApp'],
       configuracoes: ['Configurações', 'Gerencie seu perfil e preferências'],
     };
     const addLabels = { vendas: 'Nova Venda', compras: 'Nova Ordem', despesas: 'Nova Despesa', estoque: 'Novo Produto', clientes: 'Novo Cliente', fornecedores: 'Novo Fornecedor', produtos: 'Nova Categoria' };
@@ -6764,6 +6827,34 @@ class Component extends DCLogic {
         onGoogleCal: () => this.openGoogleCal(a),
         onRemove: () => this.removeAgendamento(a.id),
       }));
+    }
+
+    // ===== CHAT INTERNO (equipe conversa entre si, sem WhatsApp) =====
+    vm.isChatInterno = tab === 'chatinterno';
+    if (vm.isChatInterno) {
+      const myName = this.nomeUsuario(this.currentUsername()) || this.currentUsername();
+      vm.chatInternoList = (S.chatInternoMsgs || []).map(m => {
+        const mine = m.autor_nome === myName;
+        const d = m.created_at ? new Date(m.created_at) : null;
+        return {
+          id: m.id, texto: m.texto, autorNome: m.autor_nome, mine,
+          initials: this.initials(m.autor_nome || '?'),
+          time: d ? (String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0')) : '',
+          rowStyle: { display: 'flex', justifyContent: mine ? 'flex-end' : 'flex-start', marginBottom: '12px' },
+          colStyle: { maxWidth: '65%', display: 'flex', flexDirection: 'column', gap: '3px', alignItems: mine ? 'flex-end' : 'flex-start' },
+          nameStyle: { fontSize: '11.5px', fontWeight: 700, color: 'var(--color-text-secondary)' },
+          bubbleWrapStyle: { display: 'flex', alignItems: 'flex-end', gap: '6px' },
+          bubbleStyle: { background: mine ? '#1a2b42' : 'var(--color-background-secondary)', color: mine ? '#fff' : 'var(--color-text-primary)', border: mine ? 'none' : '1px solid var(--color-border-tertiary)', borderRadius: '13px', padding: '9px 13px', fontSize: '13.5px', lineHeight: '1.45', wordBreak: 'break-word', whiteSpace: 'pre-wrap' },
+          metaStyle: { fontSize: '10px', color: 'var(--color-text-secondary)' },
+          showRemove: mine,
+          onRemove: () => this.removeChatInternoMsg(m.id),
+        };
+      });
+      vm.chatInternoEmpty = vm.chatInternoList.length === 0;
+      vm.chatInternoInputVal = S.chatInternoInput || '';
+      vm.onChatInternoInput = this.onChatInternoInput;
+      vm.onChatInternoKey = this.onChatInternoKey;
+      vm.onSendChatInterno = () => this.sendChatInterno();
     }
 
     // ===== AGENTES IA =====
