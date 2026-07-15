@@ -48,7 +48,7 @@ module.exports = async (req, res) => {
     const user = users && users[0];
     if (!user || !user.is_admin) return res.status(403).json({ error: 'Sem permissão para trocar de empresa' });
 
-    const re = await fetch(SUPA_URL + '/rest/v1/empresas?id=eq.' + encodeURIComponent(empresaId) + '&select=id,nome', {
+    const re = await fetch(SUPA_URL + '/rest/v1/empresas?id=eq.' + encodeURIComponent(empresaId) + '&select=id,nome,segmento', {
       headers: { apikey: SUPA_ANON_KEY, Authorization: 'Bearer ' + serviceKey },
     });
     if (!re.ok) throw new Error('Falha ao consultar empresa: ' + re.status);
@@ -63,7 +63,7 @@ module.exports = async (req, res) => {
 
     // quem troca de empresa é sempre admin cross-empresa (só ele chega até aqui),
     // então tem acesso total à empresa escolhida, independente do "role" da própria linha
-    return res.status(200).json({ access_token: access_token, expires_at: exp * 1000, username: user.username, empresa_id: empresa.id, empresaNome: empresa.nome, role: 'admin', isAdmin: true });
+    return res.status(200).json({ access_token: access_token, expires_at: exp * 1000, username: user.username, empresa_id: empresa.id, empresaNome: empresa.nome, role: 'admin', isAdmin: true, segmento: empresa.segmento || 'geral' });
   } catch (e) {
     console.error('[switch-empresa] erro:', e);
     return res.status(500).json({ error: String((e && e.message) || e) });

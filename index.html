@@ -1676,7 +1676,7 @@
 <x-dc>
 <helmet>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.11.0/dist/tabler-icons.min.css">
-<script>window.__VERSATIL_BUILD__ = "1784025200000";</script>
+<script>window.__VERSATIL_BUILD__ = "1784030000000";</script>
 <style>
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;height:100%;}
@@ -3483,6 +3483,12 @@ POLÍTICAS: trocas em até 7 dias com nota." style="padding:14px 15px;border:1px
               <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:var(--color-text-secondary);">Nome da empresa
                 <input name="nome" value="{{ form.nome }}" onInput="{{ onFormChange }}" placeholder="ex: DeOli Automações" style="padding:11px 13px;border:1px solid var(--color-border-tertiary);border-radius:9px;background:var(--color-background-primary);">
               </label>
+              <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:var(--color-text-secondary);">Segmento
+                <select name="segmento" value="{{ form.segmento }}" onChange="{{ onFormChange }}" style="padding:11px 13px;border:1px solid var(--color-border-tertiary);border-radius:9px;background:var(--color-background-primary);cursor:pointer;">
+                  <option value="geral">Geral — vendas, estoque e produtos</option>
+                  <option value="imobiliaria">Imobiliária — sem estoque/produtos</option>
+                </select>
+              </label>
             </div>
           </sc-if>
 
@@ -3953,7 +3959,7 @@ class Component extends DCLogic {
     return data;
   }
   saveSession(data, cb) {
-    const session = { access_token: data.access_token, expires_at: data.expires_at, username: data.username || '', empresa_id: data.empresa_id || '', role: data.role || 'admin', isAdmin: !!data.isAdmin, mustChangePassword: !!data.mustChangePassword };
+    const session = { access_token: data.access_token, expires_at: data.expires_at, username: data.username || '', empresa_id: data.empresa_id || '', role: data.role || 'admin', isAdmin: !!data.isAdmin, mustChangePassword: !!data.mustChangePassword, segmento: data.segmento || 'geral' };
     try { localStorage.setItem('versatil_auth', JSON.stringify(session)); } catch (e) {}
     // setState é assíncrono — quem chama boot() logo em seguida precisa esperar o
     // callback, senão as primeiras requisições saem com o token da sessão anterior
@@ -4067,12 +4073,13 @@ class Component extends DCLogic {
       });
     } catch (e) { this.toast('error', 'Falha ao trocar de empresa: ' + (e.message || e)); }
   }
-  openNovaEmpresa() { this.setState({ empresaMenuOpen: false, modal: 'nova_empresa', form: { nome: '' } }); }
+  openNovaEmpresa() { this.setState({ empresaMenuOpen: false, modal: 'nova_empresa', form: { nome: '', segmento: 'geral' } }); }
   async saveNovaEmpresa() {
     const nome = ((this.state.form && this.state.form.nome) || '').trim();
+    const segmento = (this.state.form && this.state.form.segmento) || 'geral';
     if (!nome) return this.toast('error', 'Informe o nome da empresa');
     try {
-      await this.api('POST', 'empresas', { body: { nome: nome }, query: null });
+      await this.api('POST', 'empresas', { body: { nome: nome, segmento: segmento }, query: null });
       this.setState({ modal: null, form: {} });
       this.toast('success', 'Empresa criada: ' + nome);
       this.loadEmpresas();
@@ -6057,12 +6064,17 @@ class Component extends DCLogic {
         { key: 'despesas', label: 'Despesas', icon: 'ti-receipt-2' },
       ] },
       { key: 'cadastros', label: 'CADASTROS', items: [
-        { key: 'estoque', label: 'Estoque', icon: 'ti-packages', badge: baixoCount || null, badgeColor: '#f59e0b' },
+        { key: 'estoque', label: 'Estoque', icon: 'ti-packages', badge: baixoCount || null, badgeColor: '#f59e0b', segmentos: ['geral'] },
         { key: 'clientes', label: 'Clientes', icon: 'ti-users' },
         { key: 'fornecedores', label: 'Fornecedores', icon: 'ti-building-warehouse' },
-        { key: 'produtos', label: 'Produtos', icon: 'ti-category' },
+        { key: 'produtos', label: 'Produtos', icon: 'ti-category', segmentos: ['geral'] },
       ] },
     ];
+    // segmento da empresa (ex: "imobiliaria") esconde itens que só fazem sentido pra
+    // quem vende produto físico com controle de quantidade — item sem "segmentos"
+    // aparece pra todos os segmentos
+    const segmentoAtivo = (S.authSession && S.authSession.segmento) || 'geral';
+    groupsDef = groupsDef.map(g => Object.assign({}, g, { items: g.items.filter(it => !it.segmentos || it.segmentos.indexOf(segmentoAtivo) >= 0) }));
     // funcionário: acesso limitado só ao atendimento (Atendimento/Funil/Agendamentos —
     // Agentes IA fica de fora porque é configuração, bloqueada pro papel dele no RLS)
     if (S.authSession && S.authSession.role === 'funcionario' && !S.authSession.isAdmin) {

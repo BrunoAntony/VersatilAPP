@@ -41,14 +41,14 @@ module.exports = async (req, res) => {
     if (!user) return res.status(401).json({ error: 'Usuário não encontrado' });
 
     if (!user.is_admin) {
-      const re = await fetch(SUPA_URL + '/rest/v1/empresas?id=eq.' + encodeURIComponent(user.empresa_id) + '&select=id,nome', {
+      const re = await fetch(SUPA_URL + '/rest/v1/empresas?id=eq.' + encodeURIComponent(user.empresa_id) + '&select=id,nome,segmento', {
         headers: { apikey: SUPA_ANON_KEY, Authorization: 'Bearer ' + serviceKey },
       });
       const empresas = re.ok ? await re.json() : [];
       return res.status(200).json({ isAdmin: false, empresas: empresas || [] });
     }
 
-    const re = await fetch(SUPA_URL + '/rest/v1/empresas?select=id,nome&order=nome.asc', {
+    const re = await fetch(SUPA_URL + '/rest/v1/empresas?select=id,nome,segmento&order=nome.asc', {
       headers: { apikey: SUPA_ANON_KEY, Authorization: 'Bearer ' + serviceKey },
     });
     if (!re.ok) throw new Error('Falha ao listar empresas: ' + re.status);

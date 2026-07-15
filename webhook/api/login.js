@@ -37,7 +37,7 @@ module.exports = async (req, res) => {
     const password = String(body.password || '');
     if (!username || !password) return res.status(400).json({ error: 'Informe usuário e senha' });
 
-    const r = await fetch(SUPA_URL + '/rest/v1/app_users?username=eq.' + encodeURIComponent(username) + '&select=id,username,password_hash,password_salt,empresa_id,role,is_admin,must_change_password', {
+    const r = await fetch(SUPA_URL + '/rest/v1/app_users?username=eq.' + encodeURIComponent(username) + '&select=id,username,password_hash,password_salt,empresa_id,role,is_admin,must_change_password,empresas(segmento)', {
       headers: { apikey: SUPA_ANON_KEY, Authorization: 'Bearer ' + serviceKey },
     });
     if (!r.ok) throw new Error('Falha ao consultar usuário: ' + r.status);
@@ -56,7 +56,7 @@ module.exports = async (req, res) => {
     const payload = { aud: 'authenticated', role: 'authenticated', sub: user.id, username: user.username, iat: now, exp: exp };
     const access_token = jwt.sign(payload, jwtSecret);
 
-    return res.status(200).json({ access_token: access_token, expires_at: exp * 1000, username: user.username, empresa_id: user.empresa_id, role: user.role || 'admin', isAdmin: !!user.is_admin, mustChangePassword: !!user.must_change_password });
+    return res.status(200).json({ access_token: access_token, expires_at: exp * 1000, username: user.username, empresa_id: user.empresa_id, role: user.role || 'admin', isAdmin: !!user.is_admin, mustChangePassword: !!user.must_change_password, segmento: (user.empresas && user.empresas.segmento) || 'geral' });
   } catch (e) {
     console.error('[login] erro:', e);
     return res.status(500).json({ error: String((e && e.message) || e) });
